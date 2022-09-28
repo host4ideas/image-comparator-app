@@ -1,0 +1,11 @@
+1. load photos folder and add the folder to the app (e.g.: photo-collection)
+ 1.1. Option to let the user choose what folder to load -> will be the default one
+ 1.2. Option to have multiple folders and show then in the app
+
+2. when taking a photo, let the user choose if is correct and compare it with the default photos folder
+ 2.1. Option to have multiple folders and change the default folder to compare
+ 2.2. Sanity check if in the folder there are a lot of photos (might take longer)
+
+3. When the algorith passes, show results and let the user choose what photo to save to the default folder
+ 3.1. Implement the option to save the photo to different folder instead of the default one
+ 3.2. Option to make the folder the default one
