@@ -1,7 +1,7 @@
 <template>
     <ion-header>
-        <ion-toolbar [color]="copyFile ? 'secondary' : 'primary'">
-            <ion-buttons slot="start" *ngIf="currentFolder != ''">
+        <ion-toolbar :color="copyFile ? 'secondary' : 'primary'">
+            <ion-buttons slot="start" v-if="currentFolder != ''">
                 <ion-back-button></ion-back-button>
             </ion-buttons>
             <ion-title> {{ currentFolder || "File Explorer" }} </ion-title>
@@ -14,86 +14,87 @@
     <!-- Info if the directory is empty -->
     <ion-text
         color="medium"
-        *ngIf="folderContent.length == 0"
+        v-if="folderContent.length == 0"
         class="ion-padding ion-text-center"
     >
         <p>No documents found</p>
     </ion-text>
 
-    <ion-list>
-        <ion-item-sliding *ngFor="let f of folderContent">
-            <!-- The actual file/folder item with click event -->
-            <ion-item (click)="itemClicked(f)">
-                <ion-icon
-                    [name]="f.isFile ? 'document-outline' : 'folder-outline'"
-                    slot="start"
-                ></ion-icon>
-                {{ f.name }}
-            </ion-item>
-
-            <!-- The start/end option buttons for all operations -->
-            <ion-item-options side="start">
-                <ion-item-option (click)="delete(f)" color="danger">
-                    <ion-icon name="trash" slot="icon-only"></ion-icon>
-                </ion-item-option>
-            </ion-item-options>
-
-            <ion-item-options side="end">
-                <ion-item-option (click)="startCopy(f)" color="success">
-                    Copy
-                </ion-item-option>
-            </ion-item-options>
-        </ion-item-sliding>
-    </ion-list>
+    <FolderContent
+        :folderContent="this.folderContent"
+        :itemClicked="this.itemClicked"
+        :deleteDocument="this.deleteDocument"
+        :startCopy="startCopy"
+    />
 
     <!-- Fab to add files & folders -->
     <ion-fab vertical="bottom" horizontal="end" slot="fixed">
         <ion-fab-button>
-            <ion-icon name="add"></ion-icon>
+            <ion-icon :icon="add" />
         </ion-fab-button>
         <ion-fab-list side="top">
-            <ion-fab-button (click)="createFolder()">
-                <ion-icon name="folder"></ion-icon>
+            <ion-fab-button @click="createFolder()">
+                <ion-icon :icon="folderOutline"></ion-icon>
             </ion-fab-button>
-            <ion-fab-button (click)="addFile()">
-                <ion-icon name="document"></ion-icon>
+            <ion-fab-button @click="addFile()">
+                <ion-icon :icon="documentOutline"></ion-icon>
             </ion-fab-button>
         </ion-fab-list>
     </ion-fab>
 </template>
 
-<script lang="ts">
+<script>
+// Ionic && Vue
 import {
     IonHeader,
     IonToolbar,
     IonTitle,
+    IonIcon,
+    IonFab,
+    IonFabButton,
+    IonFabList,
+    IonButtons,
     isPlatform,
     toastController,
     alertController,
-    useIonRouter,
 } from "@ionic/vue";
-
+import { useRouter } from "vue-router";
+// Plugins
 import { Filesystem, Directory } from "@capacitor/filesystem";
-import { previewAnyFile } from "@ionic-native/preview-any-file";
-import WriteBlob from "capacitor-blob-writer";
+import { PreviewAnyFile } from "@ionic-native/preview-any-file";
+// Custom components
+import FolderContent from "./FolderContent";
+// Icons
+import { add, documentOutline, folderOutline } from "ionicons/icons";
 
 export default {
     name: "Tab1",
     components: {
+        // Custom
+        FolderContent,
+        // Ionic
         IonHeader,
         IonToolbar,
         IonTitle,
+        IonFab,
+        IonFabButton,
+        IonFabList,
+        IonIcon,
+        IonButtons,
     },
     data() {
         return {
-            imgRef: null,
-            projectDesc: null,
+            // Variables
             folderContent: [],
             currentFolder: "",
             copyFile: null,
             filepicker: null,
-            ionRouter: useIonRouter(),
+            ionRouter: useRouter(),
             APP_DIRECTORY: Directory.Documents,
+            // Icons
+            documentOutline,
+            folderOutline,
+            add,
         };
     },
     methods: {
@@ -101,24 +102,18 @@ export default {
             e.preventDefault();
             this.$refs.scroll.scrollTop += e.deltaY;
         },
-        ngOnInit() {
-            // Not sure if this works
-            this.currentFolder =
-                this.ionRouter.snapshot.paramMap.get("folder") || "";
-            this.loadDocuments();
-        },
         async loadDocuments() {
             const folderContent = await Filesystem.readdir({
                 directory: this.APP_DIRECTORY,
-                path: this.currentFolder,
+                path: this.ionRouter.currentRoute.fullPath.split("/")[3] || "",
             });
 
             // The directory array is just strings
             // We add the information isFile to make life easier
             this.folderContent = folderContent.files.map((file) => {
                 return {
-                    name: file,
-                    isFile: file.includes("."),
+                    name: file.name,
+                    isFile: file.type == "file",
                 };
             });
         },
@@ -157,61 +152,41 @@ export default {
         addFile() {
             this.filepicker.click();
         },
+        convertBlobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = reject;
+                reader.onload = () => {
+                    resolve(reader.result);
+                };
+                reader.readAsDataURL(blob);
+            });
+        },
         async fileSelected($event) {
             const selected = $event.target.files[0];
 
-            await WriteBlob({
-                directory: this.APP_DIRECTORY,
+            const base64Data = await this.convertBlobToBase64(selected);
+
+            await Filesystem.writeFile({
                 path: `${this.currentFolder}/${selected.name}`,
-                blob: selected,
-                onFallback(error) {
-                    console.error("error: ", error);
-                },
+                data: base64Data,
+                directory: this.APP_DIRECTORY,
             });
 
             this.loadDocuments();
         },
-        async itemClicked(entry) {
-            if (this.copyFile) {
-                // We can only copy to a folder
-                if (entry.isFile) {
-                    // Rework this to use Vue's toastController
-                    const toast = await toastController.create({
-                        message: "Please select a folder for your operation",
-                    });
-                    await toast.present();
-                    return;
-                }
-                // Finish the ongoing operation
-                this.finishCopyFile(entry);
-            } else {
-                // Open the file or folder
-                if (entry.isFile) {
-                    this.openFile(entry);
-                } else {
-                    const pathToOpen =
-                        this.currentFolder != ""
-                            ? this.currentFolder + "/" + entry.name
-                            : entry.name;
-                    const folder = encodeURIComponent(pathToOpen);
-                    // this.router.navigateByUrl(`/home/${folder}`);
-                    this.ionRouter.navigate(`/home/${folder}`);
-                }
-            }
-        },
         async openFile(entry) {
             if (isPlatform("hybrid")) {
+                console.log("hybrid");
                 // Get the URI and use our Cordova plugin for preview
                 const fileUri = await Filesystem.getUri({
                     directory: this.APP_DIRECTORY,
                     path: this.currentFolder + "/" + entry.name,
                 });
 
-                // Check if this works when using Vue
-                previewAnyFile
-                    .preview(fileUri.uri)
-                    .then((res: any) => console.log(res))
-                    .catch((error: any) => console.error(error));
+                PreviewAnyFile.preview(fileUri.uri)
+                    .then((res) => console.log(res))
+                    .catch((error) => console.error(error));
             } else {
                 // Browser fallback to download the file
                 const file = await Filesystem.readFile({
@@ -219,20 +194,15 @@ export default {
                     path: this.currentFolder + "/" + entry.name,
                 });
 
-                const blob = this.b64toBlob(file.data, "");
-                const blobUrl = URL.createObjectURL(blob);
-
                 const a = document.createElement("a");
                 document.body.appendChild(a);
                 a.setAttribute("style", "display: none");
-                a.href = blobUrl;
+                a.href = "data:;base64," + file.data;
                 a.download = entry.name;
                 a.click();
-                window.URL.revokeObjectURL(blobUrl);
                 a.remove();
             }
         },
-
         /**
          * Helper for browser download fallback
          * https://betterprogramming.pub/convert-a-base64-url-to-image-file-in-angular-4-5796a19fdc21
@@ -260,7 +230,37 @@ export default {
             const blob = new Blob(byteArrays, { type: contentType });
             return blob;
         },
-        async delete(entry) {
+        async itemClicked(entry) {
+            if (this.copyFile) {
+                // We can only copy to a folder
+                if (entry.isFile) {
+                    const toast = await toastController.create({
+                        message: "Please select a folder for your operation",
+                    });
+                    await toast.present();
+                    return;
+                }
+                // Finish the ongoing operation
+                this.finishCopyFile(entry);
+            } else {
+                // Open the file or folder
+                if (entry.isFile) {
+                    this.openFile(entry);
+                } else {
+                    let pathToOpen;
+                    if (this.currentFolder != "") {
+                        pathToOpen = this.currentFolder + "/" + entry.name;
+                    } else {
+                        pathToOpen = entry.name;
+                    }
+                    const folder = encodeURIComponent(pathToOpen);
+                    // this.router.navigateByUrl(`/home/${folder}`);
+                    // this.ionRouter.navigate(`/home/${folder}`);
+                    this.ionRouter.push(`${folder}`);
+                }
+            }
+        },
+        async deleteDocument(entry) {
             if (entry.isFile) {
                 await Filesystem.deleteFile({
                     directory: this.APP_DIRECTORY,
@@ -303,6 +303,10 @@ export default {
     },
     mounted() {
         this.filepicker = this.$refs.filepicker;
+        // Get the current folder from the URL
+        this.currentFolder =
+            this.ionRouter.currentRoute.fullPath.split("/")[3] || "";
+        this.loadDocuments();
     },
 };
 </script>
