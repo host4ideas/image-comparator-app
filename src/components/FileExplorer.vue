@@ -1,9 +1,13 @@
 <template>
     <ion-header>
         <ion-toolbar :color="copyFile ? 'secondary' : 'primary'">
-            <ion-buttons slot="start" v-if="currentFolder != ''">
-                <ion-back-button></ion-back-button>
-            </ion-buttons>
+            <ion-button
+                slot="start"
+                v-if="currentFolder != ''"
+                @click="handleBackButton()"
+            >
+                <ion-icon :icon="arrowBackCircleOutline" />
+            </ion-button>
             <ion-title> {{ currentFolder || "File Explorer" }} </ion-title>
         </ion-toolbar>
     </ion-header>
@@ -34,10 +38,10 @@
         </ion-fab-button>
         <ion-fab-list side="top">
             <ion-fab-button @click="createFolder()">
-                <ion-icon :icon="folderOutline"></ion-icon>
+                <ion-icon :icon="folderOutline" />
             </ion-fab-button>
             <ion-fab-button @click="addFile()">
-                <ion-icon :icon="documentOutline"></ion-icon>
+                <ion-icon :icon="documentOutline" />
             </ion-fab-button>
         </ion-fab-list>
     </ion-fab>
@@ -53,8 +57,10 @@ import {
     IonFab,
     IonFabButton,
     IonFabList,
-    IonButtons,
+    IonButton,
+    IonText,
     isPlatform,
+    useIonRouter,
     toastController,
     alertController,
 } from "@ionic/vue";
@@ -65,7 +71,14 @@ import { PreviewAnyFile } from "@ionic-native/preview-any-file";
 // Custom components
 import FolderContent from "./FolderContent";
 // Icons
-import { add, documentOutline, folderOutline } from "ionicons/icons";
+import {
+    add,
+    documentOutline,
+    folderOutline,
+    arrowBackCircleOutline,
+} from "ionicons/icons";
+
+import router from "../router/index";
 
 export default {
     name: "Tab1",
@@ -80,18 +93,25 @@ export default {
         IonFabButton,
         IonFabList,
         IonIcon,
-        IonButtons,
+        IonButton,
+        IonText,
+    },
+    props: {
+        currentFolder: String,
     },
     data() {
         return {
             // Variables
             folderContent: [],
-            currentFolder: "",
             copyFile: null,
             filepicker: null,
-            ionRouter: useRouter(),
             APP_DIRECTORY: Directory.Documents,
+            // Use Vue router
+            ionRouter: useIonRouter(),
+            vueRouter: useRouter(),
+            router: router,
             // Icons
+            arrowBackCircleOutline,
             documentOutline,
             folderOutline,
             add,
@@ -102,20 +122,65 @@ export default {
             e.preventDefault();
             this.$refs.scroll.scrollTop += e.deltaY;
         },
-        async loadDocuments() {
-            const folderContent = await Filesystem.readdir({
-                directory: this.APP_DIRECTORY,
-                path: this.ionRouter.currentRoute.fullPath.split("/")[3] || "",
-            });
+        handleBackButton() {
+            /*
+                Due to history navigation between tabs is problematic.
+                e.g.: /tabs/tab3/test/ -> /tab2/ -> /tabs/tab3/test/ -> tab back button -> undefined folder
+            */
+            let newPath;
+            const folders = this.currentFolder.split("/");
+            // Check if there is a prev folder from the URL
+            if (folders[folders.indexOf(folders[folders.length - 2])]) {
+                // If there is a prev folder from the URL replace the current path to the prev folder
+                newPath = folders[folders.length - 2];
+                this.router.replace(newPath);
+                this.loadDocuments(newPath);
+            } else {
+                // If there is not prev folder, means the root folder
+                newPath = "/tabs/tab3";
+                this.router.replace(newPath);
+                // Wait until the router sends to Tab3 the updated prop (folder) from the param (folder)
+                const interval = setInterval(() => {
+                    if (this.currentFolder === "") {
+                        clearInterval(interval);
+                        this.loadDocuments();
+                    }
+                }, 50);
+            }
+            newPath = null;
+        },
+        async loadDocuments(newPath = null) {
+            try {
+                if (newPath || newPath == "") {
+                    /*
+                        It takes some time for the router to update the props.
+                        Don't loadDocuments until currentFolder is updated with the clicked folder name
+                    */
+                    const interval = setInterval(() => {
+                        if (this.currentFolder === newPath) {
+                            clearInterval(interval);
+                            this.loadDocuments();
+                        }
+                    }, 50);
+                } else {
+                    const folderContent = await Filesystem.readdir({
+                        directory: this.APP_DIRECTORY,
+                        path: this.currentFolder || "",
+                    });
 
-            // The directory array is just strings
-            // We add the information isFile to make life easier
-            this.folderContent = folderContent.files.map((file) => {
-                return {
-                    name: file.name,
-                    isFile: file.type == "file",
-                };
-            });
+                    // The directory array is just strings
+                    // We add the information isFile to make life easier
+                    this.folderContent = folderContent.files.map((file) => {
+                        return {
+                            name: file.name,
+                            isFile: file.type == "file",
+                        };
+                    });
+                }
+            } catch (e) {
+                this.router.back();
+                this.loadDocuments();
+            }
         },
         async createFolder() {
             // Rework this to use Vue's alertController
@@ -254,9 +319,18 @@ export default {
                         pathToOpen = entry.name;
                     }
                     const folder = encodeURIComponent(pathToOpen);
-                    // this.router.navigateByUrl(`/home/${folder}`);
-                    // this.ionRouter.navigate(`/home/${folder}`);
-                    this.ionRouter.push(`${folder}`);
+                    this.router.push(`/tabs/tab3/${folder}`);
+
+                    /*
+                        It takes some time for the router to update the props.
+                        Don't loadDocuments until currentFolder is updated with the clicked folder name
+                    */
+                    const interval = setInterval(() => {
+                        if (this.currentFolder === pathToOpen) {
+                            clearInterval(interval);
+                            this.loadDocuments(pathToOpen);
+                        }
+                    }, 100);
                 }
             }
         },
@@ -303,9 +377,6 @@ export default {
     },
     mounted() {
         this.filepicker = this.$refs.filepicker;
-        // Get the current folder from the URL
-        this.currentFolder =
-            this.ionRouter.currentRoute.fullPath.split("/")[3] || "";
         this.loadDocuments();
     },
 };

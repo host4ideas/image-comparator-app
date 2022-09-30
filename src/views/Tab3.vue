@@ -1,41 +1,44 @@
 <template>
-  <ion-page>
-    <ion-header>
-      <ion-toolbar>
-        <ion-title>Tab 3</ion-title>
-      </ion-toolbar>
-    </ion-header>
-    <ion-content :fullscreen="true">
-      <ion-header collapse="condense">
-        <ion-toolbar>
-          <ion-title size="large">Tab 3</ion-title>
-        </ion-toolbar>
-      </ion-header>
-      <!-- Main content -->
-      <FileExplorer />
-    </ion-content>
-  </ion-page>
+    <ion-page>
+        <ion-header>
+            <ion-toolbar>
+                <ion-title>Tab 3</ion-title>
+            </ion-toolbar>
+        </ion-header>
+        <ion-content :fullscreen="true">
+            <ion-header collapse="condense">
+                <ion-toolbar>
+                    <ion-title size="large">Tab 3</ion-title>
+                </ion-toolbar>
+            </ion-header>
+            <!-- Main content -->
+            <FileExplorer :currentFolder="folder" />
+        </ion-content>
+    </ion-page>
 </template>
 
 <script lang="ts">
 import {
-  IonPage,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonContent,
-} from "@ionic/vue";
-import FileExplorer from "@/components/FileExplorer.vue";
-
-export default {
-  name: "Tab3",
-  components: {
-    FileExplorer,
+    IonPage,
     IonHeader,
     IonToolbar,
     IonTitle,
     IonContent,
-    IonPage,
-  },
+} from "@ionic/vue";
+import FileExplorer from "@/components/FileExplorer.vue";
+
+export default {
+    name: "Tab3",
+    components: {
+        FileExplorer,
+        IonHeader,
+        IonToolbar,
+        IonTitle,
+        IonContent,
+        IonPage,
+    },
+    props: {
+        folder: String,
+    },
 };
 </script>
