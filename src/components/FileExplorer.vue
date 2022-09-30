@@ -14,6 +14,15 @@
 
     <!-- For opening a standard file picker -->
     <input hidden type="file" ref="filepicker" @change="fileSelected($event)" />
+    <!-- For opening a directory picker -->
+    <input
+        hidden
+        type="file"
+        webkitdirectory
+        directory
+        ref="folderpicker"
+        @change="folderSelected($event)"
+    />
 
     <!-- Info if the directory is empty -->
     <ion-text
@@ -38,6 +47,9 @@
         </ion-fab-button>
         <ion-fab-list side="top">
             <ion-fab-button @click="createFolder()">
+                <ion-icon :icon="folderOutline" />
+            </ion-fab-button>
+            <ion-fab-button @click="addFolder()">
                 <ion-icon :icon="folderOutline" />
             </ion-fab-button>
             <ion-fab-button @click="addFile()">
@@ -105,6 +117,7 @@ export default {
             folderContent: [],
             copyFile: null,
             filepicker: null,
+            folderpicker: null,
             APP_DIRECTORY: Directory.Documents,
             // Use Vue router
             ionRouter: useIonRouter(),
@@ -217,6 +230,9 @@ export default {
         addFile() {
             this.filepicker.click();
         },
+        addFolder() {
+            this.folderpicker.click();
+        },
         convertBlobToBase64(blob) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -230,6 +246,8 @@ export default {
         async fileSelected($event) {
             const selected = $event.target.files[0];
 
+            console.log($event);
+
             const base64Data = await this.convertBlobToBase64(selected);
 
             await Filesystem.writeFile({
@@ -237,6 +255,21 @@ export default {
                 data: base64Data,
                 directory: this.APP_DIRECTORY,
             });
+
+            this.loadDocuments();
+        },
+        async folderSelected($event) {
+            const selected = $event.target.files[0];
+
+            console.log($event);
+
+            // const base64Data = await this.convertBlobToBase64(selected);
+
+            // await Filesystem.writeFile({
+            //     path: `${this.currentFolder}/${selected.name}`,
+            //     data: base64Data,
+            //     directory: this.APP_DIRECTORY,
+            // });
 
             this.loadDocuments();
         },
@@ -377,6 +410,7 @@ export default {
     },
     mounted() {
         this.filepicker = this.$refs.filepicker;
+        this.folderpicker = this.$refs.folderpicker;
         this.loadDocuments();
     },
 };
