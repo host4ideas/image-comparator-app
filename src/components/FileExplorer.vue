@@ -48,15 +48,30 @@
             <ion-icon :icon="add" />
         </ion-fab-button>
         <ion-fab-list side="top">
-            <ion-fab-button @click="createFolder()">
+            <ion-button
+                color="light"
+                title="Create folder"
+                aria-hidden="true"
+                @click="createFolder()"
+            >
                 <ion-icon :icon="folderOutline" />
-            </ion-fab-button>
-            <ion-fab-button @click="addFolder()">
-                <ion-icon :icon="cloudUploadOutline"></ion-icon>
-            </ion-fab-button>
-            <ion-fab-button @click="addFile()">
+            </ion-button>
+            <ion-button
+                color="light"
+                title="Add folder"
+                aria-hidden="true"
+                @click="addFolder()"
+            >
+                <ion-icon :icon="cloudUploadOutline" />
+            </ion-button>
+            <ion-button
+                color="light"
+                title="Add file"
+                aria-hidden="true"
+                @click="addFile()"
+            >
                 <ion-icon :icon="documentOutline" />
-            </ion-fab-button>
+            </ion-button>
         </ion-fab-list>
     </ion-fab>
 </template>
