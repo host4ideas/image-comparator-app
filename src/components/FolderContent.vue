@@ -28,13 +28,15 @@
         <ion-item-sliding v-for="(f, index) in folderContent" :key="index">
             <!-- The actual file/folder item with click event -->
             <ion-item>
-                <ion-item @click="itemClicked(f)">
-                    <ion-icon
-                        :icon="f.isFile ? documentOutline : folderOutline"
-                        slot="start"
-                    />
-                    {{ f.name }}
-                </ion-item>
+                <ion-tab-button @click="itemClicked(f)" color="light">
+                    <ion-item>
+                        <ion-icon
+                            :icon="f.isFile ? documentOutline : folderOutline"
+                            slot="start"
+                        />
+                        {{ f.name }}
+                    </ion-item>
+                </ion-tab-button>
                 <ion-button slot="end" color="light" @click="deleteDocument(f)">
                     <ion-icon
                         :icon="trashOutline"
@@ -55,7 +57,16 @@
 </template>
 
 <script>
-import { IonIcon, IonButton, isPlatform, IonItem, IonItemOption, IonItemOptions, IonItemSliding, IonList } from "@ionic/vue";
+import {
+    IonIcon,
+    IonButton,
+    isPlatform,
+    IonItem,
+    IonItemOption,
+    IonItemOptions,
+    IonItemSliding,
+    IonList,
+} from "@ionic/vue";
 import {
     trashOutline,
     documentOutline,
@@ -64,12 +75,7 @@ import {
 } from "ionicons/icons";
 
 export default {
-    props: [
-        "folderContent",
-        "itemClicked",
-        "deleteDocument",
-        "startCopy",
-    ],
+    props: ["folderContent", "itemClicked", "deleteDocument", "startCopy"],
     components: {
         IonIcon,
         IonButton,
@@ -77,7 +83,7 @@ export default {
         IonItemOption,
         IonItemOptions,
         IonItemSliding,
-        IonList
+        IonList,
     },
     data() {
         return {
