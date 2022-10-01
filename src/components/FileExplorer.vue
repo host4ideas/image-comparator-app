@@ -13,16 +13,20 @@
     </ion-header>
 
     <!-- For opening a standard file picker -->
-    <input hidden type="file" ref="filepicker" @change="fileSelected($event)" />
+    <input
+        hidden
+        type="file"
+        ref="filepicker"
+        @change="fileSelected($event)"
+        multiple
+    />
     <!-- For opening a directory picker -->
     <input
         hidden
         ref="folderpicker"
         type="file"
-        id="files"
-        name="files[]"
-        multiple
         webkitdirectory
+        multiple
         @change="folderSelected($event)"
     />
 
@@ -56,19 +60,21 @@
             >
                 <ion-icon :icon="folderOutline" />
             </ion-button>
+            <!-- Only workd on web -->
             <ion-button
+                v-if="!isHybrid"
                 color="light"
                 title="Add folder"
                 aria-hidden="true"
                 @click="addFolder()"
             >
-                <ion-icon :icon="cloudUploadOutline" />
+                <ion-icon :icon="fileTrayStackedOutline"></ion-icon>
             </ion-button>
             <ion-button
                 color="light"
-                title="Add file"
+                title="Add files"
                 aria-hidden="true"
-                @click="addFile()"
+                @click="addFiles()"
             >
                 <ion-icon :icon="documentOutline" />
             </ion-button>
@@ -105,7 +111,7 @@ import {
     documentOutline,
     folderOutline,
     arrowBackCircleOutline,
-    cloudUploadOutline,
+    fileTrayStackedOutline,
 } from "ionicons/icons";
 
 import router from "../router/index";
@@ -131,6 +137,8 @@ export default {
     },
     data() {
         return {
+            // Ionic
+            isHybrid: isPlatform("hybrid"),
             // Variables
             folderContent: [],
             copyFile: null,
@@ -143,7 +151,7 @@ export default {
             router: router,
             // Icons
             arrowBackCircleOutline,
-            cloudUploadOutline,
+            fileTrayStackedOutline,
             documentOutline,
             folderOutline,
             add,
@@ -257,7 +265,7 @@ export default {
 
             await alert.present();
         },
-        addFile() {
+        addFiles() {
             this.filepicker.click();
         },
         addFolder() {
@@ -277,62 +285,94 @@ export default {
             });
         },
         async fileSelected($event) {
-            const selected = $event.target.files[0];
+            const selected = $event.target.files;
 
-            console.log($event);
+            for (let i = 0; i < selected.length; i++) {
+                try {
+                    const base64Data = await this.convertBlobToBase64(
+                        selected[i]
+                    );
 
-            const base64Data = await this.convertBlobToBase64(selected);
+                    await Filesystem.writeFile({
+                        path: `${this.currentFolder}/${selected[i].name}`,
+                        data: base64Data,
+                        directory: this.APP_DIRECTORY,
+                    });
+                } catch (error) {
+                    if (error.message === "Maximum call stack size exceeded") {
+                        const alert = await alertController.create({
+                            header: "Error",
+                            message: `File <b><i>${selected[i].name}</i></b> is too big`,
+                            buttons: [
+                                {
+                                    text: "OK",
+                                    role: "cancel",
+                                },
+                            ],
+                        });
 
-            await Filesystem.writeFile({
-                path: `${this.currentFolder}/${selected.name}`,
-                data: base64Data,
-                directory: this.APP_DIRECTORY,
-            });
+                        await alert.present();
+                        console.log(
+                            error.message + " for: " + selected[i].name
+                        );
+                    }
+                }
+            }
 
             this.loadDocuments();
         },
         /**
+         * ONLY FOR WEB
          * For each file (event.target.files) and its webkitRelativePath, create its parent folder(s) and insert the file in that folder.
          */
         async folderSelected($event) {
             // Array of all the elements in the folder but not the included folders
             const files = $event.target.files; // FileList
+            /*
+                Web
+            */
             // Loop all files
             for (const file of files) {
-                // First of all check if the file can be processed
-                const base64Data = await this.convertBlobToBase64(file);
+                try {
+                    // First of all check if the file can be processed
+                    const base64Data = await this.convertBlobToBase64(file);
 
-                // Relative paths per file, we'll use this to know what a file's path is
-                const relativePaths = file.webkitRelativePath.split("/");
-                // Loop paths from each file
-                for (let i = 0; i < relativePaths.length; i++) {
-                    // Create the parent folder if another parent folder exists
-                    if (relativePaths[i + 1]) {
-                        // Push into newPath all the relativePaths until the current one
-                        let newPath = relativePaths.filter((path, index) => {
-                            return index <= i;
-                        });
-                        // Make a string from the array of paths
-                        newPath = newPath.join("/");
-                        await this.mkdirHelper(
-                            `${this.currentFolder}/${newPath}`
-                        );
-                    } else {
-                        // Write the file to the last file's parent folder founded
-                        const newPath = relativePaths.join("/");
+                    // Relative paths per file, we'll use this to know what a file's path is
+                    const relativePaths = file.webkitRelativePath.split("/");
+                    // Loop paths from each file
+                    for (let i = 0; i < relativePaths.length; i++) {
+                        // Create the parent folder if another parent folder exists
+                        if (relativePaths[i + 1]) {
+                            // Push into newPath all the relativePaths until the current one
+                            let newPath = relativePaths.filter(
+                                (path, index) => {
+                                    return index <= i;
+                                }
+                            );
+                            // Make a string from the array of paths
+                            newPath = newPath.join("/");
+                            await this.mkdirHelper(
+                                `${this.currentFolder}/${newPath}`
+                            );
+                        } else {
+                            // Write the file to the last file's parent folder founded
+                            const newPath = relativePaths.join("/");
 
-                        await Filesystem.writeFile({
-                            path: newPath,
-                            data: base64Data,
-                            directory: this.APP_DIRECTORY,
-                        });
+                            await Filesystem.writeFile({
+                                path: newPath,
+                                data: base64Data,
+                                directory: this.APP_DIRECTORY,
+                            });
+                        }
                     }
+                } catch (error) {
+                    console.log(error.message + " for: " + file.name);
                 }
             }
             this.loadDocuments();
         },
         async openFile(entry) {
-            if (isPlatform("hybrid")) {
+            if (this.isHybrid) {
                 console.log("hybrid");
                 // Get the URI and use our Cordova plugin for preview
                 const fileUri = await Filesystem.getUri({
