@@ -17,10 +17,12 @@
     <!-- For opening a directory picker -->
     <input
         hidden
-        type="file"
-        webkitdirectory
-        directory
         ref="folderpicker"
+        type="file"
+        id="files"
+        name="files[]"
+        multiple
+        webkitdirectory
         @change="folderSelected($event)"
     />
 
@@ -50,7 +52,7 @@
                 <ion-icon :icon="folderOutline" />
             </ion-fab-button>
             <ion-fab-button @click="addFolder()">
-                <ion-icon :icon="folderOutline" />
+                <ion-icon :icon="cloudUploadOutline"></ion-icon>
             </ion-fab-button>
             <ion-fab-button @click="addFile()">
                 <ion-icon :icon="documentOutline" />
@@ -88,6 +90,7 @@ import {
     documentOutline,
     folderOutline,
     arrowBackCircleOutline,
+    cloudUploadOutline,
 } from "ionicons/icons";
 
 import router from "../router/index";
@@ -125,6 +128,7 @@ export default {
             router: router,
             // Icons
             arrowBackCircleOutline,
+            cloudUploadOutline,
             documentOutline,
             folderOutline,
             add,
@@ -195,6 +199,19 @@ export default {
                 this.loadDocuments();
             }
         },
+        async mkdirHelper(path) {
+            try {
+                await Filesystem.mkdir({
+                    directory: this.APP_DIRECTORY,
+                    path: path,
+                });
+                this.loadDocuments();
+                return true;
+            } catch (error) {
+                console.log(error.message);
+                return false;
+            }
+        },
         async createFolder() {
             // Rework this to use Vue's alertController
             const alert = await alertController.create({
@@ -215,11 +232,9 @@ export default {
                     {
                         text: "Create",
                         handler: async (data) => {
-                            await Filesystem.mkdir({
-                                directory: this.APP_DIRECTORY,
-                                path: `${this.currentFolder}/${data.name}`,
-                            });
-                            this.loadDocuments();
+                            await this.mkdirHelper(
+                                `${this.currentFolder}/${data.name}`
+                            );
                         },
                     },
                 ],
@@ -233,6 +248,9 @@ export default {
         addFolder() {
             this.folderpicker.click();
         },
+        /**
+         * Convert File to base64 string
+         */
         convertBlobToBase64(blob) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -258,19 +276,44 @@ export default {
 
             this.loadDocuments();
         },
+        /**
+         * For each file (event.target.files) and its webkitRelativePath, create its parent folder(s) and insert the file in that folder.
+         */
         async folderSelected($event) {
-            const selected = $event.target.files[0];
+            // Array of all the elements in the folder but not the included folders
+            const files = $event.target.files; // FileList
+            // Loop all files
+            for (const file of files) {
+                // First of all check if the file can be processed
+                const base64Data = await this.convertBlobToBase64(file);
 
-            console.log($event);
+                // Relative paths per file, we'll use this to know what a file's path is
+                const relativePaths = file.webkitRelativePath.split("/");
+                // Loop paths from each file
+                for (let i = 0; i < relativePaths.length; i++) {
+                    // Create the parent folder if another parent folder exists
+                    if (relativePaths[i + 1]) {
+                        // Push into newPath all the relativePaths until the current one
+                        let newPath = relativePaths.filter((path, index) => {
+                            return index <= i;
+                        });
+                        // Make a string from the array of paths
+                        newPath = newPath.join("/");
+                        await this.mkdirHelper(
+                            `${this.currentFolder}/${newPath}`
+                        );
+                    } else {
+                        // Write the file to the last file's parent folder founded
+                        const newPath = relativePaths.join("/");
 
-            // const base64Data = await this.convertBlobToBase64(selected);
-
-            // await Filesystem.writeFile({
-            //     path: `${this.currentFolder}/${selected.name}`,
-            //     data: base64Data,
-            //     directory: this.APP_DIRECTORY,
-            // });
-
+                        await Filesystem.writeFile({
+                            path: newPath,
+                            data: base64Data,
+                            directory: this.APP_DIRECTORY,
+                        });
+                    }
+                }
+            }
             this.loadDocuments();
         },
         async openFile(entry) {
