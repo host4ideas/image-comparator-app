@@ -37,6 +37,13 @@
                         {{ f.name }}
                     </ion-item>
                 </ion-tab-button>
+                <!-- Set tab1 folder -->
+                <!-- <ion-toggle
+                    :enable-on-off-labels="false"
+                    @click="collectionFolder(f)"
+                    slot="end"
+                ></ion-toggle> -->
+                <!-- Delete -->
                 <ion-button slot="end" color="light" @click="deleteDocument(f)">
                     <ion-icon
                         :icon="trashOutline"
@@ -44,6 +51,7 @@
                         slot="icon-only"
                     />
                 </ion-button>
+                <!-- Copy -->
                 <ion-button slot="end" color="light" @click="startCopy(f)">
                     <ion-icon
                         :icon="copyOutline"
@@ -66,6 +74,8 @@ import {
     IonItemOptions,
     IonItemSliding,
     IonList,
+    IonTabButton,
+    IonToggle,
 } from "@ionic/vue";
 import {
     trashOutline,
@@ -75,7 +85,12 @@ import {
 } from "ionicons/icons";
 
 export default {
-    props: ["folderContent", "itemClicked", "deleteDocument", "startCopy"],
+    props: [
+        "folderContent",
+        "itemClicked",
+        "deleteDocument",
+        "startCopy",
+    ],
     components: {
         IonIcon,
         IonButton,
@@ -84,6 +99,8 @@ export default {
         IonItemOptions,
         IonItemSliding,
         IonList,
+        IonTabButton,
+        // IonToggle,
     },
     data() {
         return {

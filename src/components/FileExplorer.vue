@@ -145,6 +145,7 @@ export default {
             filepicker: null,
             folderpicker: null,
             APP_DIRECTORY: Directory.Documents,
+            ROOT_FOLDER: "my-photo-collections",
             // Use Vue router
             ionRouter: useIonRouter(),
             vueRouter: useRouter(),
@@ -399,33 +400,6 @@ export default {
                 a.remove();
             }
         },
-        /**
-         * Helper for browser download fallback
-         * https://betterprogramming.pub/convert-a-base64-url-to-image-file-in-angular-4-5796a19fdc21
-         */
-        b64toBlob(b64Data, contentType = "", sliceSize = 512) {
-            const byteCharacters = atob(b64Data);
-            const byteArrays = [];
-
-            for (
-                let offset = 0;
-                offset < byteCharacters.length;
-                offset += sliceSize
-            ) {
-                const slice = byteCharacters.slice(offset, offset + sliceSize);
-
-                const byteNumbers = new Array(slice.length);
-                for (let i = 0; i < slice.length; i++) {
-                    byteNumbers[i] = slice.charCodeAt(i);
-                }
-
-                const byteArray = new Uint8Array(byteNumbers);
-                byteArrays.push(byteArray);
-            }
-
-            const blob = new Blob(byteArrays, { type: contentType });
-            return blob;
-        },
         async itemClicked(entry) {
             if (this.copyFile) {
                 // We can only copy to a folder
@@ -484,7 +458,6 @@ export default {
             this.copyFile = file;
         },
         async finishCopyFile(entry) {
-            // Make sure we don't have any additional slash in our path
             const current =
                 this.currentFolder != "" ? `/${this.currentFolder}` : "";
 
@@ -505,11 +478,40 @@ export default {
             this.copyFile = null;
             this.loadDocuments();
         },
+        async checkRootFolder() {
+            try {
+                await Filesystem.readdir({
+                    directory: this.APP_DIRECTORY,
+                    path: this.ROOT_FOLDER,
+                });
+                console.log("Default folder exists.");
+            } catch (error) {
+                if (error.message === "Folder does not exist.") {
+                    const alert = await alertController.create({
+                        header: "Choose root folder",
+                        message: `No default folder found. Default folder will be created in: <i>${this.APP_DIRECTORY}/${this.ROOT_FOLDER}</i>.<br/>
+                                  If you want to modify your collections, you can do it in the built-in File Explorer or through your smartphone's preferred File Explorer app.`,
+                        buttons: [
+                            {
+                                text: "OK",
+                                role: "cancel",
+                            },
+                        ],
+                    });
+                    await alert.present();
+                    // Create default
+                    await this.mkdirHelper(`${this.ROOT_FOLDER}`);
+                    console.log(`Default folder created: ${this.ROOT_FOLDER}`);
+                }
+            }
+        },
     },
     mounted() {
         this.filepicker = this.$refs.filepicker;
         this.folderpicker = this.$refs.folderpicker;
-        this.loadDocuments();
+        this.checkRootFolder().then(() => {
+            this.loadDocuments();
+        });
     },
 };
 </script>

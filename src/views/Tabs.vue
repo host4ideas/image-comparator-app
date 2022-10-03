@@ -4,10 +4,10 @@
             <ion-tabs>
                 <ion-router-outlet></ion-router-outlet>
                 <ion-tab-bar>
-                    <ion-tab-button tab="tab1" href="/tabs/tab1">
+                    <!-- <ion-tab-button tab="tab1" href="/tabs/tab1">
                         <ion-icon :icon="triangle"></ion-icon>
                         <ion-label>Tab 1</ion-label>
-                    </ion-tab-button>
+                    </ion-tab-button> -->
 
                     <ion-tab-button tab="tab2" href="/tabs/tab2">
                         <ion-icon :icon="images" />
