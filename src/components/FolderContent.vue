@@ -28,21 +28,24 @@
         <ion-item-sliding v-for="(f, index) in folderContent" :key="index">
             <!-- The actual file/folder item with click event -->
             <ion-item>
-                <ion-tab-button @click="itemClicked(f)" color="light">
-                    <ion-item>
-                        <ion-icon
-                            :icon="f.isFile ? documentOutline : folderOutline"
-                            slot="start"
-                        />
-                        {{ f.name }}
-                    </ion-item>
-                </ion-tab-button>
-                <!-- Set tab1 folder -->
-                <!-- <ion-toggle
-                    :enable-on-off-labels="false"
-                    @click="collectionFolder(f)"
+                <ion-item
+                    @click="itemClicked(f)"
+                    color="light"
+                    style="cursor: pointer"
+                >
+                    <ion-icon
+                        :icon="f.isFile ? documentOutline : folderOutline"
+                        slot="start"
+                    />
+                    {{ f.name }}
+                </ion-item>
+                <!-- Set My Collection folder -->
+                <ion-toggle
+                    v-if="f.name != ROOT_FOLDER && !f.isFile"
+                    :checked="myCollectionFolder.name == f.name"
+                    @click="changeCollectionFolder(f)"
                     slot="end"
-                ></ion-toggle> -->
+                ></ion-toggle>
                 <!-- Delete -->
                 <ion-button slot="end" color="light" @click="deleteDocument(f)">
                     <ion-icon
@@ -74,7 +77,6 @@ import {
     IonItemOptions,
     IonItemSliding,
     IonList,
-    IonTabButton,
     IonToggle,
 } from "@ionic/vue";
 import {
@@ -83,14 +85,10 @@ import {
     folderOutline,
     copyOutline,
 } from "ionicons/icons";
+import { Preferences } from "@capacitor/preferences";
 
 export default {
-    props: [
-        "folderContent",
-        "itemClicked",
-        "deleteDocument",
-        "startCopy",
-    ],
+    props: ["folderContent", "itemClicked", "deleteDocument", "startCopy"],
     components: {
         IonIcon,
         IonButton,
@@ -99,18 +97,50 @@ export default {
         IonItemOptions,
         IonItemSliding,
         IonList,
-        IonTabButton,
-        // IonToggle,
+        IonToggle,
     },
     data() {
         return {
+            // Variables
+            ROOT_FOLDER: "my-photo-collections",
+            myCollectionFolder: {},
             // Icons
             trashOutline,
             documentOutline,
             folderOutline,
             copyOutline,
             isPlatform,
+            USER_PREFERENCES: "settings",
         };
+    },
+    methods: {
+        async changeCollectionFolder(entry) {
+            const settingsList = await Preferences.get({
+                key: this.USER_PREFERENCES,
+            });
+
+            await Preferences.set({
+                key: this.USER_PREFERENCES,
+                value: JSON.stringify({
+                    ...{ myCollectionFolder: entry },
+                }),
+            });
+            Preferences.get({
+                key: this.USER_PREFERENCES,
+            }).then((settingsList) => {
+                console.log(settingsList);
+            });
+            this.collectionFolder = entry;
+        },
+        mounted() {
+            Preferences.get({
+                key: this.USER_PREFERENCES,
+            }).then((settingsList) => {
+                const settings = JSON.parse(settingsList);
+                console.log(settings);
+                this.collectionFolder = settings.myCollectionFolder;
+            });
+        },
     },
 };
 </script>

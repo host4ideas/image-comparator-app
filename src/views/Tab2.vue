@@ -2,13 +2,13 @@
     <ion-page>
         <ion-header>
             <ion-toolbar>
-                <ion-title>Photo Gallery</ion-title>
+                <ion-title>My Collection</ion-title>
             </ion-toolbar>
         </ion-header>
         <ion-content :fullscreen="true">
             <ion-header collapse="condense">
                 <ion-toolbar>
-                    <ion-title size="large">Photo Gallery</ion-title>
+                    <ion-title size="large">My Collection</ion-title>
                 </ion-toolbar>
             </ion-header>
             <ion-grid>
@@ -50,8 +50,7 @@ import {
 } from "@ionic/vue";
 import { usePhotoGallery } from "@/composables/usePhotoGallery";
 import { defineComponent } from "vue";
-import { SplashScreen } from "@capacitor/splash-screen";
-import cv from "@/lib/opencv-4.6";
+import { Preferences } from "@capacitor/preferences";
 
 export default defineComponent({
     name: "Tab2",
@@ -70,28 +69,12 @@ export default defineComponent({
         IonImg,
     },
     mounted() {
-        cv['onRuntimeInitialized'] = () => {console.log('OpenCV.js is ready.')};
-
-        /**
-         *  Here we will check from time to time if we can access the OpenCV
-         *  functions. We will return in a callback if it has been resolved
-         *  well (true) or if there has been a timeout (false).
-         */
-        // const waitTimeMs = 30000;
-        // const stepTimeMs = 100;
-
-        // cv.call(this.openCV);
-
-        // let timeSpentMs = 0;
-        // const interval = setInterval(() => {
-        //     const limitReached = timeSpentMs > waitTimeMs;
-        //     if (cv.Mat || limitReached) {
-        //         clearInterval(interval);
-        //         // Set
-        //     } else {
-        //         timeSpentMs += stepTimeMs;
-        //     }
-        // }, stepTimeMs);
+        // Check if there is a user selected My Collection folder to display
+        Preferences.get({
+            key: "settings",
+        }).then((settingsList) => {
+            console.log(settingsList);
+        });
     },
     setup() {
         let openCV;

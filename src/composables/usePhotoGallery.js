@@ -1,9 +1,9 @@
-import { ref, onMounted, watch } from "vue";
 import { Capacitor } from "@capacitor/core";
+import { ref, onMounted, watch } from "vue";
 import { Camera, CameraSource, CameraResultType } from "@capacitor/camera";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { Preferences } from "@capacitor/preferences";
-import { isPlatform } from "@ionic/vue";
+import { isPlatform, alertController } from "@ionic/vue";
 
 export function usePhotoGallery() {
     const photos = {};
@@ -13,28 +13,24 @@ export function usePhotoGallery() {
     const ROOT_FOLDER = "my-photo-collections";
 
     const loadSaved = async () => {
-        const settingsList = await Preferences.get({ key: USER_PREFERENCES });
-
-        console.log(settingsList);
-
-        const folderContent = await Filesystem.readdir({
-            directory: APP_DIRECTORY,
-            path: ROOT_FOLDER,
-        });
+        const photoList = await Preferences.get({ key: PHOTO_STORAGE });
+        const photosInPreferences = photoList.value
+            ? JSON.parse(photoList.value)
+            : [];
 
         // If running on the web...
         if (!isPlatform("hybrid")) {
-            if (folderContent.files.length > 0) {
-                for (const photo in folderContent) {
-                    const file = await Filesystem.readFile({
-                        path: photo.filepath,
-                        directory: APP_DIRECTORY,
-                    });
-                    // Web platform only: Load the photo as base64 data
-                    photo.webviewPath = `data:image/jpeg;base64,${file.data}`;
-                }
+            for (const photo of photosInPreferences) {
+                const file = await Filesystem.readFile({
+                    path: photo.filepath,
+                    directory: Directory.Data,
+                });
+                // Web platform only: Load the photo as base64 data
+                photo.webviewPath = `data:image/jpeg;base64,${file.data}`;
             }
         }
+
+        photos.value = photosInPreferences;
     };
 
     const convertBlobToBase64 = (blob) =>
@@ -47,9 +43,15 @@ export function usePhotoGallery() {
             reader.readAsDataURL(blob);
         });
 
-    const savePicture = async (photo, fileName) => {
+    const takePhoto = async () => {
+        const photo = await Camera.getPhoto({
+            resultType: CameraResultType.Uri,
+            source: CameraSource.Camera,
+            quality: 100,
+        });
+
         let base64Data;
-        // "hybrid" will detect Cordova or Capacitor;
+
         if (isPlatform("hybrid")) {
             const file = await Filesystem.readFile({
                 // eslint-disable-next-line
@@ -63,39 +65,63 @@ export function usePhotoGallery() {
             const blob = await response.blob();
             base64Data = await convertBlobToBase64(blob);
         }
-        const savedFile = await Filesystem.writeFile({
-            path: fileName,
-            data: base64Data,
-            directory: APP_DIRECTORY,
-        });
 
-        if (isPlatform("hybrid")) {
-            // Display the new image by rewriting the 'file://' path to HTTP
-            // Details: https://ionicframework.com/docs/building/webview#file-protocol
-            return {
-                filepath: savedFile.uri,
-                webviewPath: Capacitor.convertFileSrc(savedFile.uri),
-            };
-        } else {
-            // Use webPath to display the new image instead of base64 since it's
-            // already loaded into memory
-            return {
-                filepath: fileName,
-                webviewPath: photo.webPath,
-            };
-        }
-    };
+        const img = document.createElement("img");
+        document.body.appendChild(img);
+        img.src = base64Data;
 
-    const takePhoto = async () => {
-        const photo = await Camera.getPhoto({
-            resultType: CameraResultType.Uri,
-            source: CameraSource.Camera,
-            quality: 100,
-        });
-        const fileName = new Date().getTime() + ".jpeg";
-        const savedFileImage = await savePicture(photo, fileName);
+        /*
+            Process image with OpenCV
+        */
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const cv = require("../lib/opencv-4.6");
 
-        photos.value = [savedFileImage, ...photos.value];
+        cv["onRuntimeInitialized"] = async () => {
+            console.log("OpenCV.js is ready. Starting process...");
+
+            /*
+                Select which folder use for image comparison
+             */
+            // const alert = await alertController.create({
+            //     header: "Create folder",
+            //     message: "Please specify the name of the new folder",
+            //     inputs: [
+            //         {
+            //             name: "name",
+            //             type: "text",
+            //             placeholder: "MyDir",
+            //         },
+            //     ],
+            //     buttons: [
+            //         {
+            //             text: "Current <i><b>My Collection</b></i> folder",
+            //             role: "cancel",
+            //         },
+            //         {
+            //             text: "Specified folder",
+            //             handler: async (data) => {
+            //                 await this.mkdirHelper(
+            //                     `${this.currentFolder}/${data.name}`
+            //                 );
+            //             },
+            //         },
+            //     ],
+            // });
+
+            // await alert.present();
+
+            /*
+                Use current My Collection folder
+            */
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const imageComparator = require("../composables/imageComparator");
+            // imageComparator(cv, img, imgInput2, canvasResult);
+            // const folderContent = await Filesystem.readdir({
+            //     directory: APP_DIRECTORY,
+            //     path: ROOT_FOLDER,
+            // });
+        };
+        img.remove();
     };
 
     const deletePhoto = async (photo) => {

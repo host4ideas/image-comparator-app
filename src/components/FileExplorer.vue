@@ -113,7 +113,7 @@ import {
     arrowBackCircleOutline,
     fileTrayStackedOutline,
 } from "ionicons/icons";
-
+import { Preferences } from "@capacitor/preferences";
 import router from "../router/index";
 
 export default {
@@ -146,6 +146,7 @@ export default {
             folderpicker: null,
             APP_DIRECTORY: Directory.Documents,
             ROOT_FOLDER: "my-photo-collections",
+            USER_PREFERENCES: "settings",
             // Use Vue router
             ionRouter: useIonRouter(),
             vueRouter: useRouter(),
@@ -209,9 +210,21 @@ export default {
                         path: this.currentFolder || "",
                     });
 
+                    Preferences.get({
+                        key: this.USER_PREFERENCES,
+                    }).then((settingsList) => {
+                        console.log(settingsList);
+                    });
+
                     // The directory array is just strings
                     // We add the information isFile to make life easier
                     this.folderContent = folderContent.files.map((file) => {
+                        if (file.type === "directory") {
+                            file = {
+                                ...file,
+                                ...{ isCollectionFolder: false },
+                            };
+                        }
                         return {
                             name: file.name,
                             isFile: file.type == "file",
@@ -237,7 +250,6 @@ export default {
             }
         },
         async createFolder() {
-            // Rework this to use Vue's alertController
             const alert = await alertController.create({
                 header: "Create folder",
                 message: "Please specify the name of the new folder",
@@ -435,7 +447,7 @@ export default {
                             clearInterval(interval);
                             this.loadDocuments(pathToOpen);
                         }
-                    }, 100);
+                    }, 50);
                 }
             }
         },
@@ -478,6 +490,9 @@ export default {
             this.copyFile = null;
             this.loadDocuments();
         },
+        /**
+         * Check if the dedicated folders for the app exist in Documents
+         */
         async checkRootFolder() {
             try {
                 await Filesystem.readdir({
