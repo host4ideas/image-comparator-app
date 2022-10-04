@@ -113,7 +113,6 @@ import {
     arrowBackCircleOutline,
     fileTrayStackedOutline,
 } from "ionicons/icons";
-import { Preferences } from "@capacitor/preferences";
 import router from "../router/index";
 
 export default {
@@ -208,12 +207,6 @@ export default {
                     const folderContent = await Filesystem.readdir({
                         directory: this.APP_DIRECTORY,
                         path: this.currentFolder || "",
-                    });
-
-                    Preferences.get({
-                        key: this.USER_PREFERENCES,
-                    }).then((settingsList) => {
-                        console.log(settingsList);
                     });
 
                     // The directory array is just strings

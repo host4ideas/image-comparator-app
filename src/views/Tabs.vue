@@ -57,30 +57,27 @@ export default {
         const USER_PREFERENCES = "settings";
         let settingsExist = false;
 
-        const createSettings = () => {
-            Preferences.set({
+        const createSettings = async () => {
+            await Preferences.set({
                 key: USER_PREFERENCES,
                 value: JSON.stringify({
                     myCollectionFolder: null,
                     showCanvasResult: false,
                 }),
             });
-            settingsExist = true;
         };
         onMounted(() => {
-            // Check if there is a user selected My Collection folder to display
+            // Check if settings exist
             Preferences.get({
                 key: USER_PREFERENCES,
             })
                 .then((settingsList) => {
                     const settings = JSON.parse(settingsList.value);
 
-                    if (
-                        settings == null ||
-                        !settings.myCollectionFolder ||
-                        !settings.showCanvasResult
-                    ) {
-                        createSettings();
+                    if (settings == null) {
+                        createSettings().then(() => {
+                            settingsExist = true;
+                        });
                     } else {
                         settingsExist = true;
                     }

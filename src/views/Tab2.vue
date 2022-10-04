@@ -23,7 +23,7 @@
             </ion-grid>
 
             <ion-fab vertical="bottom" horizontal="center" slot="fixed">
-                <ion-fab-button @click="takePhoto()">
+                <ion-fab-button v-if="settingsExist" @click="takePhoto()">
                     <ion-icon :icon="camera"></ion-icon>
                 </ion-fab-button>
             </ion-fab>
@@ -47,6 +47,7 @@ import {
     IonGrid,
     IonRow,
     IonCol,
+    alertController,
 } from "@ionic/vue";
 import { usePhotoGallery } from "@/composables/usePhotoGallery";
 import { defineComponent } from "vue";
@@ -69,16 +70,38 @@ export default defineComponent({
         IonImg,
     },
     mounted() {
-        // Check if there is a user selected My Collection folder to display
-        Preferences.get({
-            key: "settings",
-        }).then((settingsList) => {
-            console.log(settingsList);
-        });
+        this.checkCollectionFolder();
     },
     setup() {
+        let settingsExist = false;
         let openCV;
         const { photos, takePhoto, deletePhoto } = usePhotoGallery();
+
+        const checkCollectionFolder = async () => {
+            // Check if there is a user selected My Collection folder to display
+            const settingsList = await Preferences.get({
+                key: "settings",
+            });
+
+            const settings = JSON.parse(settingsList.value);
+
+            if (settings.myCollectionFolder == null) {
+                const alert = await alertController.create({
+                    header: "No Collection Folder selected.",
+                    message: "Please, check a collection folder to use.",
+                    buttons: [
+                        {
+                            text: "OK",
+                            role: "cancel",
+                        },
+                    ],
+                });
+
+                await alert.present();
+            } else {
+                settingsExist = true;
+            }
+        };
 
         const showActionSheet = async (photo) => {
             const actionSheet = await actionSheetController.create({
@@ -113,6 +136,8 @@ export default defineComponent({
             trash,
             close,
             openCV,
+            checkCollectionFolder,
+            settingsExist,
         };
     },
 });
