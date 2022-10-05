@@ -2,7 +2,7 @@ export default async function imageComparator(
     cv,
     imgInput1,
     imgInput2,
-    canvasResult
+    canvasResult = null
 ) {
     const img1Original = cv.imread(imgInput1);
     const img2Original = cv.imread(imgInput2);
@@ -133,7 +133,9 @@ export default async function imageComparator(
         matchingImage
     );
 
-    cv.imshow(canvasResult, matchingImage);
+    if (canvasResult) {
+        cv.imshow(canvasResult, matchingImage);
+    }
 
     [
         img1Original,
