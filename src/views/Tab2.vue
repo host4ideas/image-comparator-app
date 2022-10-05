@@ -26,6 +26,7 @@
                 <ion-fab-button v-if="settingsExist" @click="takePhoto()">
                     <ion-icon :icon="camera"></ion-icon>
                 </ion-fab-button>
+                {{ settingsExist }}
             </ion-fab>
         </ion-content>
     </ion-page>
@@ -50,7 +51,7 @@ import {
     alertController,
 } from "@ionic/vue";
 import { usePhotoGallery } from "@/composables/usePhotoGallery";
-import { defineComponent } from "vue";
+import { defineComponent, onMounted } from "vue";
 import { Preferences } from "@capacitor/preferences";
 
 export default defineComponent({
@@ -69,39 +70,42 @@ export default defineComponent({
         IonCol,
         IonImg,
     },
-    mounted() {
-        this.checkCollectionFolder();
-    },
     setup() {
-        let settingsExist = false;
         let openCV;
+        let settingsExist = false;
         const { photos, takePhoto, deletePhoto } = usePhotoGallery();
 
-        const checkCollectionFolder = async () => {
+        onMounted(() => {
             // Check if there is a user selected My Collection folder to display
-            const settingsList = await Preferences.get({
+            Preferences.get({
                 key: "settings",
+            }).then((settingsList) => {
+                const settings = JSON.parse(settingsList.value);
+
+                if (settings.myCollectionFolder == null) {
+                    alertController
+                        .create({
+                            header: "No Collection Folder selected.",
+                            message:
+                                "Please, check a collection folder to use.",
+                            buttons: [
+                                {
+                                    text: "OK",
+                                    role: "cancel",
+                                },
+                            ],
+                        })
+                        .then((alert) => {
+                            alert.present();
+                        });
+                } else {
+                    console.log("Test");
+                    console.log(settingsExist);
+                    settingsExist = true;
+                    console.log(settingsExist);
+                }
             });
-
-            const settings = JSON.parse(settingsList.value);
-
-            if (settings.myCollectionFolder == null) {
-                const alert = await alertController.create({
-                    header: "No Collection Folder selected.",
-                    message: "Please, check a collection folder to use.",
-                    buttons: [
-                        {
-                            text: "OK",
-                            role: "cancel",
-                        },
-                    ],
-                });
-
-                await alert.present();
-            } else {
-                settingsExist = true;
-            }
-        };
+        });
 
         const showActionSheet = async (photo) => {
             const actionSheet = await actionSheetController.create({
@@ -136,7 +140,6 @@ export default defineComponent({
             trash,
             close,
             openCV,
-            checkCollectionFolder,
             settingsExist,
         };
     },
