@@ -80,46 +80,24 @@ export function usePhotoGallery() {
             console.log("OpenCV.js is ready. Starting process...");
 
             /*
-                Select which folder use for image comparison
-             */
-            // const alert = await alertController.create({
-            //     header: "Create folder",
-            //     message: "Please specify the name of the new folder",
-            //     inputs: [
-            //         {
-            //             name: "name",
-            //             type: "text",
-            //             placeholder: "MyDir",
-            //         },
-            //     ],
-            //     buttons: [
-            //         {
-            //             text: "Current <i><b>My Collection</b></i> folder",
-            //             role: "cancel",
-            //         },
-            //         {
-            //             text: "Specified folder",
-            //             handler: async (data) => {
-            //                 await this.mkdirHelper(
-            //                     `${this.currentFolder}/${data.name}`
-            //                 );
-            //             },
-            //         },
-            //     ],
-            // });
-
-            // await alert.present();
-
-            /*
                 Use current My Collection folder
             */
             // eslint-disable-next-line @typescript-eslint/no-var-requires
             const imageComparator = require("../composables/imageComparator");
-            // imageComparator(cv, img, imgInput2, canvasResult);
-            // const folderContent = await Filesystem.readdir({
-            //     directory: APP_DIRECTORY,
-            //     path: ROOT_FOLDER,
-            // });
+
+            const folder = Preferences.get({
+                key: this.USER_PREFERENCES,
+            });
+
+            const folderParsed = JSON.parse(folder.value);
+            this.collectionFolder = folderParsed.myCollectionFolder;
+
+            const folderContent = await Filesystem.readdir({
+                directory: APP_DIRECTORY,
+                path: ROOT_FOLDER,
+            });
+
+            // await imageComparator(cv, img, imgInput2);
         };
         img.remove();
     };
