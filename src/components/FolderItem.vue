@@ -106,7 +106,7 @@ export default {
             // Variables
             ROOT_FOLDER: "my-photo-collections",
             isChecked: false,
-            isDisabled: true,
+            isDisabled: false,
             // Ionic
             isPlatform,
             // Icons
@@ -137,11 +137,15 @@ export default {
             key: this.USER_PREFERENCES,
         }).then((settingsList) => {
             const settingsParsed = JSON.parse(settingsList.value);
-            if (settingsParsed.myCollectionFolder.name === this.item.name) {
-                this.isDisabled = true;
-                this.isChecked = true;
+            if (settingsParsed.myCollectionFolder) {
+                if (settingsParsed.myCollectionFolder.name === this.item.name) {
+                    this.isDisabled = true;
+                    this.isChecked = true;
+                } else {
+                    this.isDisabled = false;
+                }
             } else {
-                this.isDisabled = false;
+                console.log("No Collection Folder");
             }
         });
     },
