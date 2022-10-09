@@ -9,3 +9,11 @@
 3. When the algorith passes, show results and let the user choose what photo to save to the default folder
  3.1. Implement the option to save the photo to different folder instead of the default one
  3.2. Option to make the folder the default one
+
+OpenCV accepted image files:
+
+Window bitmaps - *.bmp, *.dib
+JPEG files - *.jpeg, *.jpg, *.jpe
+Portable Network Graphics - *.png
+Portable image format- *.pbm, *.pgm, *.ppm
+TIFF files - *.tiff, *.tif

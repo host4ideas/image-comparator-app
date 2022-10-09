@@ -1,9 +1,10 @@
-import { Capacitor } from "@capacitor/core";
-import { ref, onMounted, watch } from "vue";
+import { onMounted } from "vue";
 import { Camera, CameraSource, CameraResultType } from "@capacitor/camera";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { Preferences } from "@capacitor/preferences";
 import { isPlatform, alertController } from "@ionic/vue";
+import imageComparator from "./imageComparator";
+import router from "@/router";
 
 export function usePhotoGallery() {
     const photos = {};
@@ -11,6 +12,7 @@ export function usePhotoGallery() {
     const USER_PREFERENCES = "settings";
     const APP_DIRECTORY = Directory.Documents;
     const ROOT_FOLDER = "my-photo-collections";
+    let openCV = null;
 
     const loadSaved = async () => {
         const photoList = await Preferences.get({ key: PHOTO_STORAGE });
@@ -43,63 +45,115 @@ export function usePhotoGallery() {
             reader.readAsDataURL(blob);
         });
 
-    const takePhoto = async () => {
-        const photo = await Camera.getPhoto({
-            resultType: CameraResultType.Uri,
-            source: CameraSource.Camera,
-            quality: 100,
+    const checkCollectionFolder = () => {
+        // Check if there is a user selected My Collection folder to display
+        Preferences.get({
+            key: USER_PREFERENCES,
+        }).then((settingsList) => {
+            const settings = JSON.parse(settingsList.value);
+
+            if (settings.myCollectionFolder == null) {
+                alertController
+                    .create({
+                        header: "No Collection Folder selected.",
+                        message: "Please, check a collection folder to use.",
+                        buttons: [
+                            {
+                                text: "OK",
+                                role: "cancel",
+                            },
+                        ],
+                    })
+                    .then((alert) => {
+                        alert.present();
+                    });
+            }
+        });
+    };
+
+    const checkOpenCV = () =>
+        new Promise((resolve, reject) => {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const cv = require("../lib/opencv-4.6");
+
+            // Load OpenCV for first time
+            if (!openCV) {
+                cv["onRuntimeInitialized"] = () => {
+                    console.log("OpenCV.js is ready.");
+                    openCV = cv;
+                    resolve();
+                };
+            } else {
+                resolve();
+            }
         });
 
-        let base64Data;
+    /**
+     * Receives an img element and an array of folders paths
+     * @param {HTMLElement} img
+     * @param {Array} folders
+     */
+    const compareImages = async (img, folders) => {
+        const results = [];
+        await checkOpenCV();
+        await compareImages();
 
-        if (isPlatform("hybrid")) {
-            const file = await Filesystem.readFile({
-                // eslint-disable-next-line
-                path: photo.path,
-            });
-            base64Data = file.data;
-        } else {
-            // Fetch the photo, read as a blob, then convert to base64 format
-            // eslint-disable-next-line
-            const response = await fetch(photo.webPath);
-            const blob = await response.blob();
-            base64Data = await convertBlobToBase64(blob);
-        }
-
-        const img = document.createElement("img");
-        document.body.appendChild(img);
-        img.src = base64Data;
-
-        /*
-            Process image with OpenCV
-        */
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const cv = require("../lib/opencv-4.6");
-
-        cv["onRuntimeInitialized"] = async () => {
-            console.log("OpenCV.js is ready. Starting process...");
-
-            /*
-                Use current My Collection folder
-            */
-            // eslint-disable-next-line @typescript-eslint/no-var-requires
-            const imageComparator = require("../composables/imageComparator");
-
-            const folder = Preferences.get({
-                key: this.USER_PREFERENCES,
-            });
-
-            const folderParsed = JSON.parse(folder.value);
-            this.collectionFolder = folderParsed.myCollectionFolder;
-
+        for (const folder of folders) {
             const folderContent = await Filesystem.readdir({
-                directory: APP_DIRECTORY,
-                path: ROOT_FOLDER,
+                directory: this.APP_DIRECTORY,
+                path: folder,
             });
 
-            // await imageComparator(cv, img, imgInput2);
-        };
-        img.remove();
+            // The directory array is just strings
+            // We add the information isFile to make life easier
+            folderContent.files.map((file) => {
+                if (file.type === "file") {
+                    console.log("file");
+                    // const result = imageComparator(openCV, img, file);
+                    // if (result) {
+                    //     results.push(file);
+                    // }
+                }
+            });
+        }
+        return results;
+    };
+
+    const takePhoto = async () => {
+        try {
+            const photo = await Camera.getPhoto({
+                resultType: CameraResultType.Uri,
+                source: CameraSource.Camera,
+                quality: 100,
+            });
+
+            let base64Data;
+
+            if (isPlatform("hybrid")) {
+                const file = await Filesystem.readFile({
+                    // eslint-disable-next-line
+                    path: photo.path,
+                });
+                base64Data = file.data;
+            } else {
+                // Fetch the photo, read as a blob, then convert to base64 format
+                // eslint-disable-next-line
+                const response = await fetch(photo.webPath);
+                const blob = await response.blob();
+                base64Data = await convertBlobToBase64(blob);
+            }
+
+            const img = document.createElement("img");
+            document.body.appendChild(img);
+            img.src = base64Data;
+
+            // Delete data to save memory
+            base64Data = null;
+            return img;
+        } catch (e) {
+            console.info(e.message);
+            return null;
+        }
     };
 
     const deletePhoto = async (photo) => {
@@ -118,20 +172,15 @@ export function usePhotoGallery() {
         });
     };
 
-    const cachePhotos = () => {
-        Preferences.set({
-            key: PHOTO_STORAGE,
-            value: JSON.stringify(photos.value),
-        });
-    };
-
-    onMounted(loadSaved);
-
-    watch(photos, cachePhotos);
+    onMounted(() => {
+        loadSaved();
+        checkCollectionFolder();
+    });
 
     return {
         photos,
         takePhoto,
         deletePhoto,
+        compareImages,
     };
 }

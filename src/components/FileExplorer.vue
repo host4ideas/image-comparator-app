@@ -44,10 +44,22 @@
         :itemClicked="this.itemClicked"
         :deleteDocument="this.deleteDocument"
         :startCopy="startCopy"
+        :currentFolder="currentFolder"
+        :addToCompare="addToCompare"
+        :imageComparisonMode="imageComparisonMode"
+        @response="(msg) => (foldersToCompare = msg)"
     />
 
     <!-- Fab to add files & folders -->
     <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+        <ion-fab-button
+            v-if="imageComparisonMode"
+            @click="compareWithFolders()"
+            color="success"
+            style="margin-bottom: 15px"
+        >
+            <ion-icon :icon="checkmark" />
+        </ion-fab-button>
         <ion-fab-button>
             <ion-icon :icon="add" />
         </ion-fab-button>
@@ -95,11 +107,9 @@ import {
     IonButton,
     IonText,
     isPlatform,
-    useIonRouter,
     toastController,
     alertController,
 } from "@ionic/vue";
-import { useRouter } from "vue-router";
 // Plugins
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { PreviewAnyFile } from "@ionic-native/preview-any-file";
@@ -108,17 +118,18 @@ import FolderContent from "./FolderContent";
 // Icons
 import {
     add,
+    checkmark,
     documentOutline,
     folderOutline,
     arrowBackCircleOutline,
     fileTrayStackedOutline,
 } from "ionicons/icons";
-import router from "../router/index";
+import router from "@/router/index";
 
 export default {
     name: "Tab1",
     components: {
-        // Custom
+        // Variables
         FolderContent,
         // Ionic
         IonHeader,
@@ -133,6 +144,7 @@ export default {
     },
     props: {
         currentFolder: String,
+        isImageComparison: Boolean,
     },
     data() {
         return {
@@ -143,18 +155,19 @@ export default {
             copyFile: null,
             filepicker: null,
             folderpicker: null,
+            foldersToCompare: [],
+            imageComparisonMode: false,
             APP_DIRECTORY: Directory.Documents,
             ROOT_FOLDER: "my-photo-collections",
             USER_PREFERENCES: "settings",
             // Use Vue router
-            ionRouter: useIonRouter(),
-            vueRouter: useRouter(),
             router: router,
             // Icons
             arrowBackCircleOutline,
             fileTrayStackedOutline,
             documentOutline,
             folderOutline,
+            checkmark,
             add,
         };
     },
@@ -175,34 +188,65 @@ export default {
                 // If there is a prev folder from the URL replace the current path to the prev folder
                 newPath = folders[folders.length - 2];
                 this.router.replace(newPath);
-                this.loadDocuments(newPath);
             } else {
-                // If there is not prev folder, means the root folder
+                // If there is not a prev folder, means the root folder
                 newPath = "/tabs/tab3";
                 this.router.replace(newPath);
-                // Wait until the router sends to Tab3 the updated prop (folder) from the param (folder)
-                const interval = setInterval(() => {
-                    if (this.currentFolder === "") {
-                        clearInterval(interval);
-                        this.loadDocuments();
-                    }
-                }, 50);
             }
             newPath = null;
+        },
+        getCurrentFolder() {
+            const folder = this.currentFolder.split("/");
+            return folder[folder.length - 1];
+        },
+        addToCompare(item) {
+            const itemPath =
+                this.$route.path
+                    .split("/")
+                    .filter((item, index) => {
+                        return index > 2;
+                    })
+                    .join("/") +
+                "/" +
+                item.name;
+
+            if (this.foldersToCompare.indexOf(itemPath) < 0) {
+                this.foldersToCompare.push(itemPath);
+            } else {
+                this.foldersToCompare = this.foldersToCompare.filter(
+                    (folder) => {
+                        return folder != itemPath;
+                    }
+                );
+            }
+        },
+        async compareWithFolders() {
+            if (this.foldersToCompare.length > 0) {
+                this.imageComparisonMode = false;
+                router.replace(
+                    `/tabs/tab2?folders=${JSON.stringify(
+                        this.foldersToCompare
+                    )}`
+                );
+            } else {
+                const alert = await alertController.create({
+                    header: "No folders selected",
+                    message: "Please specify at least one folder to compare.",
+                    buttons: [
+                        {
+                            text: "OK",
+                            role: "cancel",
+                        },
+                    ],
+                });
+
+                await alert.present();
+            }
         },
         async loadDocuments(newPath = null) {
             try {
                 if (newPath || newPath == "") {
-                    /*
-                        It takes some time for the router to update the props.
-                        Don't loadDocuments until currentFolder is updated with the clicked folder name
-                    */
-                    const interval = setInterval(() => {
-                        if (this.currentFolder === newPath) {
-                            clearInterval(interval);
-                            this.loadDocuments();
-                        }
-                    }, 50);
+                    this.loadDocuments();
                 } else {
                     const folderContent = await Filesystem.readdir({
                         directory: this.APP_DIRECTORY,
@@ -430,17 +474,6 @@ export default {
                     }
                     const folder = encodeURIComponent(pathToOpen);
                     this.router.push(`/tabs/tab3/${folder}`);
-
-                    /*
-                        It takes some time for the router to update the props.
-                        Don't loadDocuments until currentFolder is updated with the clicked folder name
-                    */
-                    const interval = setInterval(() => {
-                        if (this.currentFolder === pathToOpen) {
-                            clearInterval(interval);
-                            this.loadDocuments(pathToOpen);
-                        }
-                    }, 50);
                 }
             }
         },
@@ -514,7 +547,20 @@ export default {
             }
         },
     },
+    watch: {
+        currentFolder() {
+            this.loadDocuments();
+        },
+        isImageComparison(newVal) {
+            console.log(newVal);
+            if (newVal === true) {
+                console.log("loaded");
+                this.imageComparisonMode = true;
+            }
+        },
+    },
     mounted() {
+        console.log("Mounted");
         this.filepicker = this.$refs.filepicker;
         this.folderpicker = this.$refs.folderpicker;
         this.checkRootFolder().then(() => {

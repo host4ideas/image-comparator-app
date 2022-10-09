@@ -1,3 +1,10 @@
+/**
+ * Inputs two images and shows a result image if a canvas or img element is provided.
+ * @param {Object} cv OpenCV loaded object
+ * @param {String} imgInput1 An image
+ * @param {String} imgInput2 An image
+ * @param {String} canvasResult An img or canvas HTML Element
+ */
 export default async function imageComparator(
     cv,
     imgInput1,
@@ -133,10 +140,6 @@ export default async function imageComparator(
         matchingImage
     );
 
-    if (canvasResult) {
-        cv.imshow(canvasResult, matchingImage);
-    }
-
     [
         img1Original,
         img2Original,
@@ -148,10 +151,19 @@ export default async function imageComparator(
         descriptors2,
         orb,
         matches,
-        goodMatches,
         bf,
         matchingImage,
     ].forEach((element) => {
         element.delete();
     });
+
+    if (goodMatches.size() >= 5) {
+        if (canvasResult) {
+            cv.imshow(canvasResult, matchingImage);
+        }
+        goodMatches.delete();
+        return true;
+    } else {
+        return false;
+    }
 }

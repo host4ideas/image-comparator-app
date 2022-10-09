@@ -9,6 +9,18 @@
             {{ item.name }}
         </ion-item>
 
+        <!-- Set My Collection folder -->
+        <ion-checkbox
+            v-if="item.name != ROOT_FOLDER && !item.isFile"
+            :checked="isChecked"
+            :disabled="isDisabled"
+            @click="changeCollectionFolder(item)"
+            slot="end"
+        ></ion-checkbox>
+        <ion-label v-if="item.name != ROOT_FOLDER && !item.isFile" slot="end"
+            >Collection Folder</ion-label
+        >
+
         <!-- The start/end option buttons for all operations -->
         <ion-item-options side="start">
             <ion-item-option @click="deleteDocument(item)" color="danger">
@@ -43,7 +55,11 @@
                 @click="changeCollectionFolder(item)"
                 slot="end"
             ></ion-checkbox>
-            <ion-label slot="end">Collection Folder</ion-label>
+            <ion-label
+                v-if="item.name != ROOT_FOLDER && !item.isFile"
+                slot="end"
+                >Collection Folder</ion-label
+            >
             <!-- Delete -->
             <ion-button slot="end" color="light" @click="deleteDocument(item)">
                 <ion-icon

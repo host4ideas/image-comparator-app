@@ -12,7 +12,10 @@
                 </ion-toolbar>
             </ion-header>
             <!-- Main content -->
-            <FileExplorer :currentFolder="folder" />
+            <FileExplorer
+                :currentFolder="folder"
+                :isImageComparison="isImageComparison"
+            />
         </ion-content>
     </ion-page>
 </template>
@@ -39,6 +42,7 @@ export default {
     },
     props: {
         folder: String,
+        isImageComparison: Boolean,
     },
 };
 </script>

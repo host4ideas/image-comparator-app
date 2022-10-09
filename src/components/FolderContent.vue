@@ -1,13 +1,20 @@
 <template>
     <ion-list>
         <ion-item-sliding v-for="(f, index) in folderContent" :key="index">
-            <FolderItem
+            <!-- <FolderItem
+                v-if="!imageComparisonMode"
                 :item="f"
                 :collectionFolder="collectionFolder"
                 :changeCollectionFolder="this.changeCollectionFolder"
                 :itemClicked="this.itemClicked"
                 :deleteDocument="this.deleteDocument"
                 :startCopy="startCopy"
+            /> -->
+            <FolderItemImageComparison
+                :item="f"
+                :itemClicked="this.itemClicked"
+                :addToCompare="addToCompare"
+                @response="(msg) => foldersToCompare"
             />
         </ion-item-sliding>
     </ion-list>
@@ -23,19 +30,29 @@ import {
 } from "ionicons/icons";
 import { Preferences } from "@capacitor/preferences";
 import FolderItem from "./FolderItem.vue";
+import FolderItemImageComparison from "./FolderItemImageComparison.vue";
 
 export default {
-    props: ["folderContent", "itemClicked", "deleteDocument", "startCopy"],
+    props: [
+        "folderContent",
+        "itemClicked",
+        "deleteDocument",
+        "startCopy",
+        "addToCompare",
+        "imageComparisonMode",
+    ],
     components: {
         IonItemSliding,
         IonList,
-        FolderItem,
+        // FolderItem,
+        FolderItemImageComparison,
     },
     data() {
         return {
             // Variables
             ROOT_FOLDER: "my-photo-collections",
             collectionFolder: "",
+            foldersToCompare: null,
             // Ionic
             isPlatform,
             // Icons

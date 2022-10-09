@@ -8,7 +8,7 @@
         <ion-content :fullscreen="true">
             <ion-header collapse="condense">
                 <ion-toolbar>
-                    <ion-title size="large">My Collection</ion-title>
+                    <ion-title size="large">My Collections</ion-title>
                 </ion-toolbar>
             </ion-header>
             <ion-grid>
@@ -23,17 +23,16 @@
             </ion-grid>
 
             <ion-fab vertical="bottom" horizontal="center" slot="fixed">
-                <ion-fab-button v-if="settingsExist" @click="takePhoto()">
+                <ion-fab-button @click="handlePhoto()">
                     <ion-icon :icon="camera"></ion-icon>
                 </ion-fab-button>
-                {{ settingsExist }}
             </ion-fab>
         </ion-content>
     </ion-page>
 </template>
 
 <script>
-import { camera, trash, close } from "ionicons/icons";
+import { camera, trash, close, folder } from "ionicons/icons";
 import {
     actionSheetController,
     IonPage,
@@ -48,14 +47,14 @@ import {
     IonGrid,
     IonRow,
     IonCol,
-    alertController,
 } from "@ionic/vue";
 import { usePhotoGallery } from "@/composables/usePhotoGallery";
-import { defineComponent, onMounted } from "vue";
-import { Preferences } from "@capacitor/preferences";
+import { defineComponent, watchEffect } from "vue";
+import router from "@/router/index";
 
 export default defineComponent({
     name: "Tab2",
+    props: ["foldersToCompare"],
     components: {
         IonHeader,
         IonFab,
@@ -70,42 +69,22 @@ export default defineComponent({
         IonCol,
         IonImg,
     },
-    setup() {
-        let openCV;
-        let settingsExist = false;
-        const { photos, takePhoto, deletePhoto } = usePhotoGallery();
+    // watch: {
+    //     foldersToCompare(newVal) {
+    //         if (newVal) {
+    //             const folders = JSON.parse(newVal);
+    //             console.log(folders);
+    //             console.log(this.imgToCompare);
+    //             // const results = await compareImages(imgToCompare, folders);
+    //             // console.log(results);
+    //         }
+    //     },
+    // },
+    setup(props) {
+        const { photos, takePhoto, deletePhoto, compareImages } =
+            usePhotoGallery();
 
-        onMounted(() => {
-            // Check if there is a user selected My Collection folder to display
-            Preferences.get({
-                key: "settings",
-            }).then((settingsList) => {
-                const settings = JSON.parse(settingsList.value);
-
-                if (settings.myCollectionFolder == null) {
-                    alertController
-                        .create({
-                            header: "No Collection Folder selected.",
-                            message:
-                                "Please, check a collection folder to use.",
-                            buttons: [
-                                {
-                                    text: "OK",
-                                    role: "cancel",
-                                },
-                            ],
-                        })
-                        .then((alert) => {
-                            alert.present();
-                        });
-                } else {
-                    console.log("Test");
-                    console.log(settingsExist);
-                    settingsExist = true;
-                    console.log(settingsExist);
-                }
-            });
-        });
+        let imgToCompare = null;
 
         const showActionSheet = async (photo) => {
             const actionSheet = await actionSheetController.create({
@@ -132,15 +111,32 @@ export default defineComponent({
             await actionSheet.present();
         };
 
+        const handlePhoto = async () => {
+            imgToCompare = await takePhoto();
+            console.log(imgToCompare);
+            if (imgToCompare) {
+                router.push("/tabs/tab3?imageComparison=true");
+            }
+        };
+
+        watchEffect(() => {
+            if (props.foldersToCompare && imgToCompare) {
+                const folders = JSON.parse(props.foldersToCompare);
+                console.log(folders);
+                console.log(imgToCompare);
+                // const results = await compareImages(imgToCompare, folders);
+                // console.log(results);
+            }
+        });
+
         return {
-            photos,
-            takePhoto,
             showActionSheet,
+            handlePhoto,
+            imgToCompare,
+            photos,
             camera,
             trash,
             close,
-            openCV,
-            settingsExist,
         };
     },
 });
