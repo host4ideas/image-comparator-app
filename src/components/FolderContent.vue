@@ -1,7 +1,7 @@
 <template>
     <ion-list>
         <ion-item-sliding v-for="(f, index) in folderContent" :key="index">
-            <!-- <FolderItem
+            <FolderItem
                 v-if="!imageComparisonMode"
                 :item="f"
                 :collectionFolder="collectionFolder"
@@ -9,8 +9,9 @@
                 :itemClicked="this.itemClicked"
                 :deleteDocument="this.deleteDocument"
                 :startCopy="startCopy"
-            /> -->
+            />
             <FolderItemImageComparison
+                v-else
                 :item="f"
                 :itemClicked="this.itemClicked"
                 :addToCompare="addToCompare"
@@ -44,7 +45,7 @@ export default {
     components: {
         IonItemSliding,
         IonList,
-        // FolderItem,
+        FolderItem,
         FolderItemImageComparison,
     },
     data() {

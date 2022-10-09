@@ -93,14 +93,17 @@ export function usePhotoGallery() {
      * @param {HTMLElement} img
      * @param {Array} folders
      */
-    const compareImages = async (img, folders) => {
+    const compareImages = async (img1, folders) => {
         const results = [];
         await checkOpenCV();
-        await compareImages();
+
+        const img2 = document.createElement("img");
+        document.body.appendChild(img2);
+        img2.id = "img2";
 
         for (const folder of folders) {
             const folderContent = await Filesystem.readdir({
-                directory: this.APP_DIRECTORY,
+                directory: APP_DIRECTORY,
                 path: folder,
             });
 
@@ -108,14 +111,34 @@ export function usePhotoGallery() {
             // We add the information isFile to make life easier
             folderContent.files.map((file) => {
                 if (file.type === "file") {
-                    console.log("file");
-                    // const result = imageComparator(openCV, img, file);
-                    // if (result) {
-                    //     results.push(file);
-                    // }
+                    Filesystem.readFile({
+                        directory: APP_DIRECTORY,
+                        path: folder + "/" + file.name,
+                    }).then((base64Data) => {
+                        base64Data = base64Data.data;
+
+                        let extension = undefined;
+                        if (base64Data.indexOf("png") !== -1) extension = "png";
+                        else if (
+                            base64Data.indexOf("jpg") !== -1 ||
+                            base64Data.indexOf("jpeg") !== -1
+                        )
+                            extension = "jpg";
+                        else extension = "tiff";
+
+                        img2.src =
+                            "data:image/" + extension + ";base64," + base64Data;
+
+                        imageComparator(openCV, img1, img2).then((result) => {
+                            if (result) {
+                                results.push(file);
+                            }
+                        });
+                    });
                 }
             });
         }
+        img2.remove();
         return results;
     };
 
@@ -146,6 +169,7 @@ export function usePhotoGallery() {
             const img = document.createElement("img");
             document.body.appendChild(img);
             img.src = base64Data;
+            img.id = "img1";
 
             // Delete data to save memory
             base64Data = null;

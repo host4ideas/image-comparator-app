@@ -122,10 +122,9 @@ export default defineComponent({
         watchEffect(() => {
             if (props.foldersToCompare && imgToCompare) {
                 const folders = JSON.parse(props.foldersToCompare);
-                console.log(folders);
-                console.log(imgToCompare);
-                // const results = await compareImages(imgToCompare, folders);
-                // console.log(results);
+                compareImages(imgToCompare, folders).then((results) => {
+                    console.log(results);
+                });
             }
         });
 

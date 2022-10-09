@@ -156,7 +156,7 @@ export default {
             filepicker: null,
             folderpicker: null,
             foldersToCompare: [],
-            imageComparisonMode: false,
+            imageComparisonMode: this.isImageComparison,
             APP_DIRECTORY: Directory.Documents,
             ROOT_FOLDER: "my-photo-collections",
             USER_PREFERENCES: "settings",
@@ -269,6 +269,7 @@ export default {
                     });
                 }
             } catch (e) {
+                console.log(e.message);
                 this.router.back();
                 this.loadDocuments();
             }
@@ -548,14 +549,13 @@ export default {
         },
     },
     watch: {
-        currentFolder() {
+        currentFolder(newVal) {
             this.loadDocuments();
         },
         isImageComparison(newVal) {
-            console.log(newVal);
             if (newVal === true) {
-                console.log("loaded");
                 this.imageComparisonMode = true;
+                this.loadDocuments();
             }
         },
     },

@@ -157,7 +157,7 @@ export default async function imageComparator(
         element.delete();
     });
 
-    if (goodMatches.size() >= 5) {
+    if (goodMatches.size() >= 0) {
         if (canvasResult) {
             cv.imshow(canvasResult, matchingImage);
         }

@@ -39,7 +39,7 @@ const routes: Array<RouteRecordRaw> = [
                 component: () => import("@/views/Tab3.vue"),
                 props: ({ params, query }) => {
                     if (query.imageComparison) {
-                        return { folder: null, isImageComparison: true };
+                        return { folder: "", isImageComparison: true };
                     } else {
                         return {
                             folder: String(params.folder),
