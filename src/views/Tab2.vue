@@ -69,17 +69,6 @@ export default defineComponent({
         IonCol,
         IonImg,
     },
-    // watch: {
-    //     foldersToCompare(newVal) {
-    //         if (newVal) {
-    //             const folders = JSON.parse(newVal);
-    //             console.log(folders);
-    //             console.log(this.imgToCompare);
-    //             // const results = await compareImages(imgToCompare, folders);
-    //             // console.log(results);
-    //         }
-    //     },
-    // },
     setup(props) {
         const { photos, takePhoto, deletePhoto, compareImages } =
             usePhotoGallery();

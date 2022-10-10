@@ -12,6 +12,8 @@ export default async function imageComparator(
     canvasResult = null
 ) {
     const img1Original = cv.imread(imgInput1);
+    console.log(imgInput1);
+    console.log(imgInput2);
     const img2Original = cv.imread(imgInput2);
 
     /*
