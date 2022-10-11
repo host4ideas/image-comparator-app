@@ -12,9 +12,18 @@ export default async function imageComparator(
     canvasResult = null
 ) {
     const img1Original = cv.imread(imgInput1);
-    console.log(imgInput1);
-    console.log(imgInput2);
     const img2Original = cv.imread(imgInput2);
+
+    function deleteAll(elements) {
+        elements.forEach((element) => {
+            try {
+                element.delete();
+            } catch (error) {
+                console.log("Element cannot be deleted: " + element);
+            }
+        });
+    }
+    let elementsToDelete = [];
 
     /*
 		Optimize images
@@ -62,12 +71,38 @@ export default async function imageComparator(
     const bf = new cv.BFMatcher(cv.NORM_HAMMING);
     const matches = new cv.DMatchVectorVector();
 
-    // match the feature descriptors
-    bf.knnMatch(descriptors1, descriptors2, matches, 2);
+    try {
+        // match the feature descriptors
+        bf.knnMatch(descriptors1, descriptors2, matches, 2);
+    } catch (error) {
+        console.log(
+            "No matches found with knnMatch for the given image or incorrect image was used"
+        );
+        elementsToDelete = [
+            ...elementsToDelete,
+            ...[
+                img1,
+                img1Gray,
+                img1Original,
+                img1RGB,
+                img2,
+                img2Gray,
+                img2Original,
+                img2RGB,
+                orb,
+                keyPoints1,
+                keyPoints2,
+                descriptors1,
+                descriptors2,
+            ],
+        ];
+        deleteAll(elementsToDelete);
+        return false;
+    }
 
     /*
-		Apply ratio test by D.Lowe and filter good results
-	*/
+    	Apply ratio test by D.Lowe and filter good results
+    */
     const knnDistanceOption = 0.7;
     const goodMatches = new cv.DMatchVector();
     let counter = 0;
@@ -142,30 +177,26 @@ export default async function imageComparator(
         matchingImage
     );
 
-    [
-        img1Original,
-        img2Original,
-        img1,
-        img2,
-        keyPoints1,
-        keyPoints2,
-        descriptors1,
-        descriptors2,
-        orb,
-        matches,
-        bf,
-        matchingImage,
-    ].forEach((element) => {
-        element.delete();
-    });
+    elementsToDelete = [...elementsToDelete, ...[orb, matches, bf]];
 
     if (goodMatches.size() >= 0) {
         if (canvasResult) {
             cv.imshow(canvasResult, matchingImage);
         }
-        goodMatches.delete();
+        elementsToDelete = [
+            ...elementsToDelete,
+            ...[goodMatches, matchingImage],
+        ];
+        deleteAll(elementsToDelete);
+        elementsToDelete = null;
         return true;
     } else {
+        elementsToDelete = [
+            ...elementsToDelete,
+            ...[goodMatches, matchingImage],
+        ];
+        deleteAll(elementsToDelete);
+        elementsToDelete = null;
         return false;
     }
 }
