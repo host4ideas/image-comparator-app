@@ -70,8 +70,13 @@ export default defineComponent({
         IonImg,
     },
     setup(props) {
-        const { photos, takePhoto, deletePhoto, compareImages } =
-            usePhotoGallery();
+        const {
+            photos,
+            takePhoto,
+            deletePhoto,
+            compareImages,
+            controlLoadingScreen,
+        } = usePhotoGallery();
 
         let imgToCompare = null;
 
@@ -102,9 +107,8 @@ export default defineComponent({
 
         const handlePhoto = async () => {
             imgToCompare = await takePhoto();
-            console.log(imgToCompare);
             if (imgToCompare) {
-                router.push("/tabs/tab3?imageComparison=true");
+                await router.push("/tabs/tab3?imageComparison=true");
             }
         };
 
@@ -114,6 +118,8 @@ export default defineComponent({
                 compareImages(imgToCompare, folders).then((results) => {
                     console.log(results);
                 });
+                imgToCompare = null;
+                router.replace("/tabs/tab2");
             }
         });
 

@@ -69,15 +69,19 @@ export default {
             Preferences.set({
                 key: this.USER_PREFERENCES,
                 value: JSON.stringify({
-                    ...{ myCollectionFolder: entry },
+                    ...{
+                        myCollectionFolder: {
+                            name: entry.name,
+                            path: this.$route.fullPath + "/" + entry.name,
+                        },
+                    },
                 }),
             }).then(() => {
                 Preferences.get({
                     key: this.USER_PREFERENCES,
                 }).then((settingsList) => {
                     const settingsParsed = JSON.parse(settingsList.value);
-                    this.collectionFolder =
-                        settingsParsed.myCollectionFolder.name;
+                    this.collectionFolder = settingsParsed.myCollectionFolder;
                 });
             });
         },

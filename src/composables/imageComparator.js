@@ -76,7 +76,9 @@ export default async function imageComparator(
         bf.knnMatch(descriptors1, descriptors2, matches, 2);
     } catch (error) {
         console.log(
-            "No matches found with knnMatch for the given image or incorrect image was used"
+            `knnMatch error: ${error} no matches for the given image or an incorrect image was used\n
+            Input image: ${imgInput1}\n
+            Folder image: ${imgInput2}`
         );
         elementsToDelete = [
             ...elementsToDelete,
