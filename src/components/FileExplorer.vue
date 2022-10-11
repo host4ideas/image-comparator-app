@@ -181,17 +181,18 @@ export default {
                 Due to history navigation between tabs is problematic.
                 e.g.: /tabs/tab3/test/ -> /tab2/ -> /tabs/tab3/test/ -> tab back button -> undefined folder
             */
-            let newPath;
+            let newPath = "";
             const folders = this.currentFolder.split("/");
             // Check if there is a prev folder from the URL
             if (folders[folders.indexOf(folders[folders.length - 2])]) {
-                // If there is a prev folder from the URL replace the current path to the prev folder
-                newPath = folders[folders.length - 2];
-                this.router.replace(newPath);
+                const openedFolder = folders[folders.length - 1];
+                newPath = folders.join("/").replace(`/${openedFolder}`, "");
+                newPath = encodeURIComponent(newPath);
+                router.replace(newPath);
             } else {
                 // If there is not a prev folder, means the root folder
                 newPath = "/tabs/tab3";
-                this.router.replace(newPath);
+                this.$router.replace(newPath);
             }
             newPath = null;
         },
@@ -200,15 +201,8 @@ export default {
             return folder[folder.length - 1];
         },
         addToCompare(item) {
-            const itemPath =
-                this.$route.path
-                    .split("/")
-                    .filter((item, index) => {
-                        return index > 2;
-                    })
-                    .join("/") +
-                "/" +
-                item.name;
+            console.log(item);
+            const itemPath = item.uri;
 
             if (this.foldersToCompare.indexOf(itemPath) < 0) {
                 this.foldersToCompare.push(itemPath);
@@ -243,34 +237,32 @@ export default {
                 await alert.present();
             }
         },
-        async loadDocuments(newPath = null) {
+        async loadDocuments() {
             try {
-                if (newPath || newPath == "") {
-                    this.loadDocuments();
-                } else {
-                    const folderContent = await Filesystem.readdir({
-                        directory: this.APP_DIRECTORY,
-                        path: this.currentFolder || "",
-                    });
+                const folderContent = await Filesystem.readdir({
+                    directory: this.APP_DIRECTORY,
+                    path: this.ROOT_FOLDER + "/" + this.currentFolder || "",
+                });
 
-                    // The directory array is just strings
-                    // We add the information isFile to make life easier
-                    this.folderContent = folderContent.files.map((file) => {
-                        if (file.type === "directory") {
-                            file = {
-                                ...file,
-                                ...{ isCollectionFolder: false },
-                            };
-                        }
-                        return {
-                            name: file.name,
-                            isFile: file.type == "file",
+                // The directory array is just strings
+                // We add the information isFile to make life easier
+                this.folderContent = folderContent.files.map((file) => {
+                    if (file.type === "directory") {
+                        file = {
+                            ...file,
+                            ...{ isCollectionFolder: false },
                         };
-                    });
-                }
+                    }
+                    return {
+                        name: file.name,
+                        isFile: file.type == "file",
+                        uri: file.uri.replace("/DOCUMENTS/", ""),
+                    };
+                });
             } catch (e) {
+                console.log("CURRENT FOLDER: " + this.currentFolder);
                 console.log(e.message);
-                this.router.back();
+                this.$router.back();
                 this.loadDocuments();
             }
         },
@@ -423,12 +415,14 @@ export default {
             this.loadDocuments();
         },
         async openFile(entry) {
+            console.log(entry);
+
             if (this.isHybrid) {
                 console.log("hybrid");
                 // Get the URI and use our Cordova plugin for preview
                 const fileUri = await Filesystem.getUri({
                     directory: this.APP_DIRECTORY,
-                    path: this.currentFolder + "/" + entry.name,
+                    path: entry.uri,
                 });
 
                 PreviewAnyFile.preview(fileUri.uri)
@@ -438,7 +432,7 @@ export default {
                 // Browser fallback to download the file
                 const file = await Filesystem.readFile({
                     directory: this.APP_DIRECTORY,
-                    path: this.currentFolder + "/" + entry.name,
+                    path: entry.uri,
                 });
 
                 const a = document.createElement("a");
@@ -474,7 +468,7 @@ export default {
                         pathToOpen = entry.name;
                     }
                     const folder = encodeURIComponent(pathToOpen);
-                    this.router.push(`/tabs/tab3/${folder}`);
+                    this.$router.push(`/tabs/tab3/${folder}`);
                 }
             }
         },
@@ -549,7 +543,7 @@ export default {
         },
     },
     watch: {
-        currentFolder(newVal) {
+        currentFolder() {
             this.loadDocuments();
         },
         isImageComparison(newVal) {
@@ -560,7 +554,6 @@ export default {
         },
     },
     mounted() {
-        console.log("Mounted");
         this.filepicker = this.$refs.filepicker;
         this.folderpicker = this.$refs.folderpicker;
         this.checkRootFolder().then(() => {
