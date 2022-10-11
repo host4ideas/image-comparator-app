@@ -97,6 +97,10 @@ export function usePhotoGallery() {
         const results = [];
         await checkOpenCV();
 
+        const img2 = document.createElement("img");
+        document.body.appendChild(img2);
+        img2.id = "img2";
+
         for (const folder of folders) {
             const folderContent = await Filesystem.readdir({
                 directory: APP_DIRECTORY,
@@ -113,25 +117,17 @@ export function usePhotoGallery() {
                     }).then((base64Data) => {
                         const data = base64Data.data;
 
-                        let extension = undefined;
-                        if (data.charAt(0) === "i") extension = "png";
-                        else if (data.charAt(0) === "/") extension = "jpg";
-                        else extension = "tiff";
+                        img2.width = "300";
+                        img2.height = "300";
+                        img2.src = "data:;base64," + data;
 
-                        const img2 = document.createElement("img");
-                        document.body.appendChild(img2);
-                        img2.id = "img2";
-                        img2.src =
-                            "data:image/" + extension + ";base64," + data;
-
-                        console.log(img2.src);
-
-                        imageComparator(openCV, img1, "img2").then((result) => {
-                            if (result) {
-                                results.push(file);
-                            }
-                        });
-                        img2.remove();
+                        imageComparator(openCV, img1, img2)
+                            .then((result) => {
+                                if (result) {
+                                    results.push(file);
+                                }
+                            })
+                            .catch((err) => console.log(err.message));
                     });
                 }
             });
