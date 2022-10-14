@@ -5,12 +5,21 @@
                 <ion-title>My Collection</ion-title>
             </ion-toolbar>
         </ion-header>
-        <ion-content :fullscreen="true">
+
+        <ion-content v-if="showSlides" :fullscreen="true">
+            <ImageCompareSlide
+                v-if="showSlides && results.length > 0"
+                :results="results"
+            />
+        </ion-content>
+
+        <ion-content v-else :fullscreen="true">
             <ion-header collapse="condense">
                 <ion-toolbar>
                     <ion-title size="large">My Collections</ion-title>
                 </ion-toolbar>
             </ion-header>
+
             <ion-grid>
                 <ion-row>
                     <ion-col size="6" :key="photo" v-for="photo in photos">
@@ -50,6 +59,7 @@ import {
 } from "@ionic/vue";
 import { usePhotoGallery } from "@/composables/usePhotoGallery";
 import { defineComponent, watchEffect } from "vue";
+import ImageCompareSlide from "@/components/ImageCompareSlide.vue";
 import router from "@/router/index";
 
 export default defineComponent({
@@ -68,6 +78,7 @@ export default defineComponent({
         IonRow,
         IonCol,
         IonImg,
+        ImageCompareSlide,
     },
     setup(props) {
         const {
@@ -77,7 +88,9 @@ export default defineComponent({
             compareImages,
             controlLoadingScreen,
         } = usePhotoGallery();
-
+        
+        const slideResults = [];
+        let showSlides = false;
         let imgToCompare = null;
 
         const showActionSheet = async (photo) => {
@@ -112,11 +125,20 @@ export default defineComponent({
             }
         };
 
+        /**
+         * @param {string[]} results
+         */
+        const createSlides = async (results) => {
+            slideResults = results;
+            showSlides = true;
+        };
+
         watchEffect(() => {
             if (props.foldersToCompare && imgToCompare) {
                 const folders = JSON.parse(props.foldersToCompare);
                 compareImages(imgToCompare, folders).then((results) => {
                     console.log(results);
+                    createSlides(results);
                 });
                 imgToCompare = null;
                 router.replace("/tabs/tab2");
@@ -131,6 +153,8 @@ export default defineComponent({
             camera,
             trash,
             close,
+            showSlides,
+            results,
         };
     },
 });
