@@ -25,6 +25,7 @@
     "cordova-plugin-preview-any-file": "^0.2.9",
     "core-js": "^3.25.3",
     "ionicons": "^6.0.3",
+    "swiper": "^8.4.4",
     "vue": "^3.2.40",
     "vue-router": "^4.1.5"
   },

@@ -2,21 +2,21 @@
     <ion-page>
         <ion-header>
             <ion-toolbar>
-                <ion-title>My Collection</ion-title>
+                <ion-title> My Collection </ion-title>
             </ion-toolbar>
         </ion-header>
 
-        <ion-content v-if="showSlides" :fullscreen="true">
-            <ImageCompareSlide
-                v-if="showSlides && results.length > 0"
-                :results="results"
-            />
+        <ion-content
+            v-if="showSlides && slideResults.length > 0"
+            :fullscreen="true"
+        >
+            <ImageCompareSlide :slideResults="slideResults" />
         </ion-content>
 
         <ion-content v-else :fullscreen="true">
             <ion-header collapse="condense">
                 <ion-toolbar>
-                    <ion-title size="large">My Collections</ion-title>
+                    <ion-title size="large">My Collections </ion-title>
                 </ion-toolbar>
             </ion-header>
 
@@ -31,7 +31,12 @@
                 </ion-row>
             </ion-grid>
 
-            <ion-fab vertical="bottom" horizontal="center" slot="fixed">
+            <ion-fab
+                id="cameraBtn"
+                vertical="bottom"
+                horizontal="center"
+                slot="fixed"
+            >
                 <ion-fab-button @click="handlePhoto()">
                     <ion-icon :icon="camera"></ion-icon>
                 </ion-fab-button>
@@ -41,7 +46,7 @@
 </template>
 
 <script>
-import { camera, trash, close, folder } from "ionicons/icons";
+import { camera, trash, close } from "ionicons/icons";
 import {
     actionSheetController,
     IonPage,
@@ -58,8 +63,8 @@ import {
     IonCol,
 } from "@ionic/vue";
 import { usePhotoGallery } from "@/composables/usePhotoGallery";
-import { defineComponent, watchEffect } from "vue";
-import ImageCompareSlide from "@/components/ImageCompareSlide.vue";
+import { defineComponent, watchEffect, ref } from "vue";
+import ImageCompareSlide from "@/components/ImageCompareSlides.vue";
 import router from "@/router/index";
 
 export default defineComponent({
@@ -86,11 +91,10 @@ export default defineComponent({
             takePhoto,
             deletePhoto,
             compareImages,
-            controlLoadingScreen,
         } = usePhotoGallery();
-        
-        const slideResults = [];
-        let showSlides = false;
+
+        const slideResults = ref([]);
+        const showSlides = ref(false);
         let imgToCompare = null;
 
         const showActionSheet = async (photo) => {
@@ -125,20 +129,19 @@ export default defineComponent({
             }
         };
 
-        /**
-         * @param {string[]} results
-         */
-        const createSlides = async (results) => {
-            slideResults = results;
-            showSlides = true;
-        };
-
         watchEffect(() => {
             if (props.foldersToCompare && imgToCompare) {
                 const folders = JSON.parse(props.foldersToCompare);
+
                 compareImages(imgToCompare, folders).then((results) => {
-                    console.log(results);
-                    createSlides(results);
+                    // Show slides
+                    slideResults.value = results;
+                    showSlides.value = true;
+
+                    // Hide the tabs buttons and camera shutter button
+                    document.getElementById("tabControl").style.display =
+                        "none";
+                    document.getElementById("cameraBtn").style.display = "none";
                 });
                 imgToCompare = null;
                 router.replace("/tabs/tab2");
@@ -154,7 +157,7 @@ export default defineComponent({
             trash,
             close,
             showSlides,
-            results,
+            slideResults,
         };
     },
 });

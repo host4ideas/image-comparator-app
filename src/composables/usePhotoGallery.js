@@ -25,14 +25,19 @@ export function usePhotoGallery() {
         // }
     };
 
-    const controlLoadingScreen = async (option, message) => {
-        const loadingScreen = await loading;
-        loadingScreen.message = message;
-        if (option === "start") {
-            await loadingScreen.present();
-        } else {
-            await loadingScreen.dismiss();
-        }
+    const controlLoadingScreen = (option, message) => {
+        loading.then((loadingScreen) => {
+            loadingScreen.message = message;
+            if (option === "start") {
+                loadingScreen.present().then(() => {
+                    return true;
+                });
+            } else {
+                loadingScreen.dismiss().then(() => {
+                    return false;
+                });
+            }
+        });
     };
 
     const convertBlobToBase64 = (blob) =>
@@ -80,23 +85,30 @@ export function usePhotoGallery() {
             // Load OpenCV for first time
             if (!openCV) {
                 cv["onRuntimeInitialized"] = () => {
-                    console.log(cv);
                     openCV = cv;
-                    resolve(controlLoadingScreen("stop"));
+                    controlLoadingScreen("stop");
+                    resolve();
                 };
             } else {
-                resolve(controlLoadingScreen("stop"));
+                loading.then((loaded) => {
+                    if (loaded.isConnected) {
+                        controlLoadingScreen("stop");
+                    }
+                });
+                resolve();
             }
         });
     };
 
     /**
      * Receives an img element and an array of folders paths
-     * @param {HTMLElement} img
-     * @param {Array} folders
+     * @param {HTMLImageElement | HTMLCanvasElement} img HTMLImageElement or HTMLCanvasElement used to compare against to it
+     * @param {Array} folders Array of folders
+     * @returns {Promise<Array<Array<HTMLImageElement | HTMLCanvasElement>>>} Returns an array with two arrays inside, one is the results from the algorithm and the other the possible duplicated images
      */
     const compareImages = async (img1, folders) => {
-        const results = [];
+        const canvasResults = [];
+        const possibleDuplicatedImages = [];
         await checkOpenCV();
 
         const img2 = document.createElement("img");
@@ -112,24 +124,27 @@ export function usePhotoGallery() {
             });
 
             // The directory array is just strings
-            // We add the information isFile to make life easier
             folderContent.files.map((file) => {
+                // If the item is a file, use to compare it
                 if (file.type === "file") {
                     Filesystem.readFile({
                         directory: APP_DIRECTORY,
                         path: folder + "/" + file.name,
                     }).then((base64Data) => {
                         const data = base64Data.data;
-
                         img2.width = "300";
                         img2.height = "300";
                         img2.src = "data:;base64," + data;
 
+                        // Create a result img or canvas
+                        const imgResult = document.createElement("canvas");
+
                         if (openCV.Mat) {
-                            imageComparator(openCV, img1, img2)
+                            imageComparator(openCV, img1, img2, imgResult)
                                 .then((result) => {
                                     if (result) {
-                                        results.push(file);
+                                        canvasResults.push(imgResult);
+                                        possibleDuplicatedImages.push(file);
                                     }
                                 })
                                 .catch((err) => console.log(err.message));
@@ -138,7 +153,7 @@ export function usePhotoGallery() {
                 }
             });
         }
-        return results;
+        return [canvasResults, possibleDuplicatedImages];
     };
 
     const takePhoto = async () => {

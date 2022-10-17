@@ -1,0 +1,2 @@
+compilado sin contrib: python3 ./opencv/platforms/js/build_js.py build_out --emscripten_dir /home/felix/emsdk/upstream/emscripten --build_wasm --clean_build_dir
+compilado con contrib: python3 ./opencv/platforms/js/build_js.py build_out --emscripten_dir /home/felix/emsdk/upstream/emscripten --build_wasm --clean_build_dir --cmake_option="-DOPENCV_EXTRA_MODULES_PATH=./opencv_contrib/modules"
