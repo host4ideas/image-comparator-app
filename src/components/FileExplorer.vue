@@ -60,6 +60,14 @@
         >
             <ion-icon :icon="checkmark" />
         </ion-fab-button>
+        <ion-fab-button
+            v-if="imageComparisonMode"
+            @click="cancelComparison()"
+            color="danger"
+            style="margin-bottom: 15px"
+        >
+            <ion-icon :icon="closeOutline" />
+        </ion-fab-button>
         <ion-fab-button>
             <ion-icon :icon="add" />
         </ion-fab-button>
@@ -123,6 +131,7 @@ import {
     folderOutline,
     arrowBackCircleOutline,
     fileTrayStackedOutline,
+    closeOutline,
 } from "ionicons/icons";
 import router from "@/router/index";
 
@@ -169,6 +178,7 @@ export default {
             folderOutline,
             checkmark,
             add,
+            closeOutline,
         };
     },
     methods: {
@@ -191,7 +201,7 @@ export default {
                 router.replace(newPath);
             } else {
                 // If there is not a prev folder, means the root folder
-                newPath = "/tabs/tab3";
+                newPath = `/tabs/tab3/${this.ROOT_FOLDER}`;
                 this.$router.replace(newPath);
             }
             newPath = null;
@@ -201,7 +211,6 @@ export default {
             return folder[folder.length - 1];
         },
         addToCompare(item) {
-            console.log(item);
             const itemPath = item.uri;
 
             if (this.foldersToCompare.indexOf(itemPath) < 0) {
@@ -213,6 +222,27 @@ export default {
                     }
                 );
             }
+        },
+        async cancelComparison() {
+            const alert = await alertController.create({
+                header: "Cancel comparison",
+                message: "Are you sure do you want to cancel the process?",
+                buttons: [
+                    {
+                        text: "NO",
+                        role: "cancel",
+                    },
+                    {
+                        text: "YES",
+                        handler: async () => {
+                            this.imageComparisonMode = false;
+                            this.$router.go(0);
+                        },
+                    },
+                ],
+            });
+
+            await alert.present();
         },
         async compareWithFolders() {
             if (this.foldersToCompare.length > 0) {
@@ -239,9 +269,11 @@ export default {
         },
         async loadDocuments() {
             try {
+                console.log(this.currentFolder);
+                
                 const folderContent = await Filesystem.readdir({
                     directory: this.APP_DIRECTORY,
-                    path: this.ROOT_FOLDER + "/" + this.currentFolder || "",
+                    path: this.currentFolder || "",
                 });
 
                 // The directory array is just strings

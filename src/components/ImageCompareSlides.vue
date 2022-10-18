@@ -13,6 +13,14 @@
     </swiper>
 </template>
 <style scoped>
+img {
+    width: 100%;
+}
+
+canvas {
+    width: 100%;
+}
+
 .swiper {
     width: 100%;
     height: 100%;
@@ -62,28 +70,22 @@ import Slide from "@/components/Slide.vue";
 
 export default defineComponent({
     props: {
-        slideResults: Array,
+        slideResults: Object,
     },
     components: { Swiper, Slide, SwiperSlide },
     setup(props) {
         const getImages = () => {
+            const results = props.slideResults;
+            const { canvasResults, possibleDuplicatedImages } = results;
+
             const images = [];
-            const [canvasResults, possibleDuplicatedImages] =
-                props.slideResults;
 
             for (let i = 0; i < canvasResults.length; i++) {
-                console.log(canvasResults[i]);
-
                 images.push({
                     image: possibleDuplicatedImages[i],
                     opencvResult: canvasResults[i],
                 });
             }
-
-            console.log(props.slideResults);
-            console.log(canvasResults);
-            console.log(possibleDuplicatedImages);
-            console.log(images);
 
             return images;
         };

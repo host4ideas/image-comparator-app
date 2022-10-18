@@ -153,7 +153,10 @@ export function usePhotoGallery() {
                 }
             });
         }
-        return [canvasResults, possibleDuplicatedImages];
+        return {
+            canvasResults: canvasResults,
+            possibleDuplicatedImages: possibleDuplicatedImages,
+        };
     };
 
     const takePhoto = async () => {

@@ -86,12 +86,8 @@ export default defineComponent({
         ImageCompareSlide,
     },
     setup(props) {
-        const {
-            photos,
-            takePhoto,
-            deletePhoto,
-            compareImages,
-        } = usePhotoGallery();
+        const { photos, takePhoto, deletePhoto, compareImages } =
+            usePhotoGallery();
 
         const slideResults = ref([]);
         const showSlides = ref(false);

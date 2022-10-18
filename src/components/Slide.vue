@@ -8,21 +8,18 @@
             }"
             :modules="modules"
         >
+            <!-- Vertical slides -->
             <swiper-slide>Vertical Slide 1</swiper-slide>
-            <swiper-slide>{{ slideResults.image }}</swiper-slide>
-            <swiper-slide>{{ slideResults.opencvResult }}</swiper-slide>
+            <swiper-slide>
+                <img :src="slideResults.image" alt="Result image" />
+            </swiper-slide>
+            <swiper-slide v-html="slideResults.opencvResult"></swiper-slide>
         </swiper>
     </swiper-slide>
 </template>
-<style scoped>
-.swiper {
-    width: 100%;
-    height: 100%;
-}
-</style>
 <script>
 // Vue
-import { defineComponent } from "vue";
+import { defineComponent, watchEffect } from "vue";
 // Swiper
 import { Pagination, Zoom, Navigation } from "swiper";
 import { Swiper, SwiperSlide } from "swiper/vue/swiper-vue";
@@ -31,10 +28,12 @@ import "@ionic/vue/css/ionic-swiper.css";
 
 export default defineComponent({
     props: {
-        slideResults: Array,
+        slideResults: Object,
     },
     components: { Swiper, SwiperSlide },
-    setup() {
+    setup(props) {
+        console.log(props.slideResults);
+
         return {
             modules: [Pagination, Zoom, Navigation],
         };
