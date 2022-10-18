@@ -116,8 +116,6 @@ export function usePhotoGallery() {
         img2.id = "img2";
 
         for (const folder of folders) {
-            console.log(folder);
-
             const folderContent = await Filesystem.readdir({
                 directory: APP_DIRECTORY,
                 path: folder,

@@ -6,11 +6,8 @@
             </ion-toolbar>
         </ion-header>
 
-        <ion-content
-            v-if="showSlides && slideResults.length > 0"
-            :fullscreen="true"
-        >
-            <ImageCompareSlide :slideResults="slideResults" />
+        <ion-content v-if="showSlides" :fullscreen="true">
+            <ImageCompareSlide :takenImage="imgToCompare" :slideResults="slideResults" />
         </ion-content>
 
         <ion-content v-else :fullscreen="true">

@@ -59,7 +59,7 @@ canvas {
 </style>
 <script>
 // Vue
-import { defineComponent } from "vue";
+import { defineComponent, watch, watchEffect, toRefs, toRaw } from "vue";
 // Swiper
 import { Autoplay, Keyboard, Pagination, Zoom, Navigation } from "swiper";
 import { Swiper, SwiperSlide } from "swiper/vue/swiper-vue";
@@ -70,23 +70,32 @@ import Slide from "@/components/Slide.vue";
 
 export default defineComponent({
     props: {
+        takenImage: HTMLImageElement,
         slideResults: Object,
     },
     components: { Swiper, Slide, SwiperSlide },
     setup(props) {
         const getImages = () => {
-            const results = props.slideResults;
-            const { canvasResults, possibleDuplicatedImages } = results;
+            const { slideResults } = toRefs(props);
+            const { canvasResults, possibleDuplicatedImages } = toRaw(
+                slideResults.value
+            );
 
+            console.log(canvasResults);
+            console.log(possibleDuplicatedImages);
+
+            // console.log(canvasResults);
+            // console.log(possibleDuplicatedImages);
             const images = [];
-
             for (let i = 0; i < canvasResults.length; i++) {
+                // console.log(canvasResults[i]);
+                // console.log(possibleDuplicatedImages[i]);
                 images.push({
                     image: possibleDuplicatedImages[i],
                     opencvResult: canvasResults[i],
                 });
             }
-
+            console.log(images);
             return images;
         };
 

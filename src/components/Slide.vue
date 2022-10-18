@@ -19,7 +19,7 @@
 </template>
 <script>
 // Vue
-import { defineComponent, watchEffect } from "vue";
+import { defineComponent } from "vue";
 // Swiper
 import { Pagination, Zoom, Navigation } from "swiper";
 import { Swiper, SwiperSlide } from "swiper/vue/swiper-vue";

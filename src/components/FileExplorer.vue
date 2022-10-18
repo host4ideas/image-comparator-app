@@ -269,8 +269,6 @@ export default {
         },
         async loadDocuments() {
             try {
-                console.log(this.currentFolder);
-                
                 const folderContent = await Filesystem.readdir({
                     directory: this.APP_DIRECTORY,
                     path: this.currentFolder || "",
