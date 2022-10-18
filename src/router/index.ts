@@ -41,8 +41,16 @@ const routes: Array<RouteRecordRaw> = [
                     if (query.imageComparison) {
                         return { folder: "", isImageComparison: true };
                     } else {
+                        let newPath;
+
+                        if (params.folder === "") {
+                            newPath = ["my-photo-collections"];
+                        } else {
+                            newPath = params.folder;
+                        }
+
                         return {
-                            folder: String(params.folder),
+                            folder: String(newPath),
                         };
                     }
                 },
