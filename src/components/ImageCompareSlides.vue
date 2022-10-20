@@ -7,18 +7,20 @@
         }"
         :modules="modules"
     >
-        <swiper-slide v-for="(images, index) in getImages()" :key="index">
-            <Slide :slideResults="images" />
+        <swiper-slide v-for="(images, index) in getImages" :key="index">
+            <Slide :takenImage="takenImage" :slideResults="images" />
         </swiper-slide>
     </swiper>
 </template>
 <style scoped>
 img {
-    width: 100%;
+    width: 300px;
+    height: 300px;
 }
 
 canvas {
-    width: 100%;
+    width: 300px;
+    height: 300px;
 }
 
 .swiper {
@@ -59,7 +61,7 @@ canvas {
 </style>
 <script>
 // Vue
-import { defineComponent, watch, watchEffect, toRefs, toRaw } from "vue";
+import { defineComponent, watch, watchEffect, toRefs, toRaw, Ref } from "vue";
 // Swiper
 import { Autoplay, Keyboard, Pagination, Zoom, Navigation } from "swiper";
 import { Swiper, SwiperSlide } from "swiper/vue/swiper-vue";
@@ -71,38 +73,47 @@ import Slide from "@/components/Slide.vue";
 export default defineComponent({
     props: {
         takenImage: HTMLImageElement,
-        slideResults: Object,
+        slideResults: Object, // slideResults = {[opencvResults], [possibleDuplicatedImages]}
     },
     components: { Swiper, Slide, SwiperSlide },
-    setup(props) {
-        const getImages = () => {
-            const { slideResults } = toRefs(props);
-            const { canvasResults, possibleDuplicatedImages } = toRaw(
-                slideResults.value
-            );
+    computed: {
+        getImages() {
+            // console.log the prop -> target = Object{canvasResults: canvas, possibleDuplicatedImages: }
+            console.log(this.slideResults);
 
-            console.log(canvasResults);
-            console.log(possibleDuplicatedImages);
+            const slideResults = JSON.parse(JSON.stringify(this.slideResults));
 
-            // console.log(canvasResults);
-            // console.log(possibleDuplicatedImages);
+            console.log(slideResults);
+
+            console.log(slideResults.canvasResults);
+            console.log(slideResults.possibleDuplicatedImages);
+
+            // To destructure props and don't lose reactivity we need to convert them into ref
+            // const { slideResults } = toRaw(this.slideResults);
+
+            // console.log(slideResults);
+
+            // const { canvasResults, possibleDuplicatedImages } = toRaw(
+            //     this.slideResults
+            // );
+
+            // console.log(canvasResults[0]);
+            // console.log(this.takenImage);
+
+            // // In order to pass to a slide the images as: Array<Object> where [{imageFile, canvas}]
+            // /**
+            //  * @type {Array<{ image: HTMLCanvasElement[], opencvResult: File[] }>}
+            //  */
             const images = [];
-            for (let i = 0; i < canvasResults.length; i++) {
-                // console.log(canvasResults[i]);
-                // console.log(possibleDuplicatedImages[i]);
-                images.push({
-                    image: possibleDuplicatedImages[i],
-                    opencvResult: canvasResults[i],
-                });
-            }
-            console.log(images);
+            // for (let i = 0; i < canvasResults.length; i++) {
+            //     images.push({
+            //         image: possibleDuplicatedImages[i],
+            //         opencvResult: canvasResults[i],
+            //     });
+            // }
+            // console.log(images);
             return images;
-        };
-
-        return {
-            modules: [Autoplay, Keyboard, Pagination, Zoom, Navigation],
-            getImages,
-        };
+        },
     },
 });
 </script>
