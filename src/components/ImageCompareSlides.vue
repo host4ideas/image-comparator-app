@@ -7,7 +7,7 @@
         }"
         :modules="modules"
     >
-        <swiper-slide v-for="(images, index) in getImages" :key="index">
+        <swiper-slide v-for="(images, index) in resultImages" :key="index">
             <Slide :takenImage="takenImage" :slideResults="images" />
         </swiper-slide>
     </swiper>
@@ -61,7 +61,15 @@ canvas {
 </style>
 <script>
 // Vue
-import { defineComponent, watch, watchEffect, toRefs, toRaw, Ref } from "vue";
+import {
+    defineComponent,
+    watch,
+    watchEffect,
+    toRefs,
+    toRaw,
+    Ref,
+    ref,
+} from "vue";
 // Swiper
 import { Autoplay, Keyboard, Pagination, Zoom, Navigation } from "swiper";
 import { Swiper, SwiperSlide } from "swiper/vue/swiper-vue";
@@ -73,47 +81,51 @@ import Slide from "@/components/Slide.vue";
 export default defineComponent({
     props: {
         takenImage: HTMLImageElement,
-        slideResults: Object, // slideResults = {[opencvResults], [possibleDuplicatedImages]}
+        canvasResults: Array,
+        possibleDuplicatedImages: Array,
     },
-    components: { Swiper, Slide, SwiperSlide },
-    computed: {
-        getImages() {
-            // console.log the prop -> target = Object{canvasResults: canvas, possibleDuplicatedImages: }
-            console.log(this.slideResults);
+    components: { Swiper, SwiperSlide, Slide },
+    setup(props) {
+        const resultImages = ref([]);
 
-            const slideResults = JSON.parse(JSON.stringify(this.slideResults));
-
-            console.log(slideResults);
-
-            console.log(slideResults.canvasResults);
-            console.log(slideResults.possibleDuplicatedImages);
-
+        /**
+         * Returns the images to use in the slides
+         */
+        const getImages = () => {
             // To destructure props and don't lose reactivity we need to convert them into ref
-            // const { slideResults } = toRaw(this.slideResults);
+            const { canvasResults, possibleDuplicatedImages } = props;
 
-            // console.log(slideResults);
+            const interval = setInterval(() => {
+                if (
+                    toRaw(canvasResults).length > 0 &&
+                    toRaw(possibleDuplicatedImages).length > 0
+                ) {
+                    clearInterval(interval);
+                    const duplicatedImages = toRaw(canvasResults);
+                    const openCVImages = toRaw(possibleDuplicatedImages);
 
-            // const { canvasResults, possibleDuplicatedImages } = toRaw(
-            //     this.slideResults
-            // );
+                    // In order to pass to a slide the images as: Array<Object> where [{imageFile, canvas}]
+                    /**
+                     * @type {Array<{ image: HTMLCanvasElement[], opencvResult: File[] }>}
+                     */
+                    const images = [];
+                    for (let i = 0; i <= duplicatedImages.length; i++) {
+                        images.push({
+                            image: duplicatedImages[i],
+                            opencvResult: openCVImages[i],
+                        });
+                    }
+                    resultImages.value = images;
+                }
+            }, 50);
+        };
 
-            // console.log(canvasResults[0]);
-            // console.log(this.takenImage);
+        getImages();
 
-            // // In order to pass to a slide the images as: Array<Object> where [{imageFile, canvas}]
-            // /**
-            //  * @type {Array<{ image: HTMLCanvasElement[], opencvResult: File[] }>}
-            //  */
-            const images = [];
-            // for (let i = 0; i < canvasResults.length; i++) {
-            //     images.push({
-            //         image: possibleDuplicatedImages[i],
-            //         opencvResult: canvasResults[i],
-            //     });
-            // }
-            // console.log(images);
-            return images;
-        },
+        return {
+            modules: [Autoplay, Keyboard, Pagination, Zoom, Navigation],
+            resultImages,
+        };
     },
 });
 </script>

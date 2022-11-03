@@ -150,9 +150,9 @@ export default async function imageComparator(
         }
     }
 
-    // console.log("here are first 5 goodMatches");
+    console.log("here are first 5 goodMatches");
     for (let r = 0; r < goodMatches.size(); ++r) {
-        // console.log("[" + r + "]", "goodMatches: ", goodMatches.get(r));
+        console.log("[" + r + "]", "goodMatches: ", goodMatches.get(r));
         if (r === 5) {
             break;
         }

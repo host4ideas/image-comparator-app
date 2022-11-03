@@ -7,7 +7,11 @@
         </ion-header>
 
         <ion-content v-if="showSlides" :fullscreen="true">
-            <ImageCompareSlide :takenImage="imgToCompare" :slideResults="slideResults" />
+            <ImageCompareSlides
+                :takenImage="imgToCompare"
+                :canvasResults="canvasResults"
+                :possibleDuplicatedImages="possibleDuplicatedImages"
+            />
         </ion-content>
 
         <ion-content v-else :fullscreen="true">
@@ -61,7 +65,7 @@ import {
 } from "@ionic/vue";
 import { usePhotoGallery } from "@/composables/usePhotoGallery";
 import { defineComponent, watchEffect, ref } from "vue";
-import ImageCompareSlide from "@/components/ImageCompareSlides.vue";
+import ImageCompareSlides from "@/components/ImageCompareSlides.vue";
 import router from "@/router/index";
 
 export default defineComponent({
@@ -80,17 +84,17 @@ export default defineComponent({
         IonRow,
         IonCol,
         IonImg,
-        ImageCompareSlide,
+        ImageCompareSlides,
     },
     setup(props) {
         const { photos, takePhoto, deletePhoto, compareImages } =
             usePhotoGallery();
-
-        const slideResults = ref([]);
+        const canvasResults = ref();
+        const possibleDuplicatedImages = ref();
         const showSlides = ref(false);
-        let imgToCompare = null;
+        const imgToCompare = ref();
 
-        const showActionSheet = async (photo) => {
+        async function showActionSheet(photo) {
             const actionSheet = await actionSheetController.create({
                 header: "Photos",
                 buttons: [
@@ -113,22 +117,23 @@ export default defineComponent({
                 ],
             });
             await actionSheet.present();
-        };
+        }
 
         const handlePhoto = async () => {
-            imgToCompare = await takePhoto();
-            if (imgToCompare) {
+            imgToCompare.value = await takePhoto();
+            if (imgToCompare.value) {
                 await router.push("/tabs/tab3?imageComparison=true");
             }
         };
 
         watchEffect(() => {
-            if (props.foldersToCompare && imgToCompare) {
+            if (props.foldersToCompare && imgToCompare.value) {
                 const folders = JSON.parse(props.foldersToCompare);
-
-                compareImages(imgToCompare, folders).then((results) => {
+                compareImages(imgToCompare.value, folders).then((results) => {
                     // Show slides
-                    slideResults.value = results;
+                    canvasResults.value = results.canvasResults;
+                    possibleDuplicatedImages.value =
+                        results.possibleDuplicatedImages;
                     showSlides.value = true;
 
                     // Hide the tabs buttons and camera shutter button
@@ -136,7 +141,6 @@ export default defineComponent({
                         "none";
                     document.getElementById("cameraBtn").style.display = "none";
                 });
-                imgToCompare = null;
                 router.replace("/tabs/tab2");
             }
         });
@@ -150,7 +154,8 @@ export default defineComponent({
             trash,
             close,
             showSlides,
-            slideResults,
+            canvasResults,
+            possibleDuplicatedImages,
         };
     },
 });

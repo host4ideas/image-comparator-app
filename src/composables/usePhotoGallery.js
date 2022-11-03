@@ -104,7 +104,7 @@ export function usePhotoGallery() {
      * Receives an img element and an array of folders paths
      * @param {HTMLImageElement | HTMLCanvasElement} img HTMLImageElement or HTMLCanvasElement used to compare against to it
      * @param {Array} folders Array of folders
-     * @returns {Promise<Array<Array<HTMLImageElement | HTMLCanvasElement>>>} Returns an array with two arrays inside, one is the results from the algorithm and the other the possible duplicated images
+     * @returns {Promise<{ canvasResults: HTMLCanvasElement[], possibleDuplicatedImages: File[] }>}  Returns an Object with two arrays inside, one is the results from the algorithm and the other the possible duplicated images
      */
     const compareImages = async (img1, folders) => {
         const canvasResults = [];
