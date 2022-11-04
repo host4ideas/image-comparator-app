@@ -9,11 +9,15 @@
             :modules="modules"
         >
             <!-- Vertical slides -->
-            <swiper-slide>Vertical Slide 1</swiper-slide>
             <swiper-slide>
-                <img :src="image" alt="Result image" />
+                {{ image }}
             </swiper-slide>
-            <swiper-slide>{{ takenImage }}</swiper-slide>
+            <swiper-slide>
+                {{ takenImage }}
+            </swiper-slide>
+            <swiper-slide>
+                <img src="https://www.vuescript.com/wp-content/uploads/2020/03/Print-HTML-In-Vue.js-vue-html-to-paper.png" alt="">
+            </swiper-slide>
             <swiper-slide v-if="showOpencvResult">
                 {{ opencvResult }}
             </swiper-slide>
@@ -22,7 +26,7 @@
 </template>
 <script>
 // Vue
-import { defineComponent, watchEffect, ref, toRefs, toRaw } from "vue";
+import { defineComponent, ref, toRaw } from "vue";
 // Swiper
 import { Pagination, Zoom, Navigation } from "swiper";
 import { Swiper, SwiperSlide } from "swiper/vue/swiper-vue";

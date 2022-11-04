@@ -61,15 +61,7 @@ canvas {
 </style>
 <script>
 // Vue
-import {
-    defineComponent,
-    watch,
-    watchEffect,
-    toRefs,
-    toRaw,
-    Ref,
-    ref,
-} from "vue";
+import { defineComponent, toRaw, ref } from "vue";
 // Swiper
 import { Autoplay, Keyboard, Pagination, Zoom, Navigation } from "swiper";
 import { Swiper, SwiperSlide } from "swiper/vue/swiper-vue";
@@ -89,10 +81,9 @@ export default defineComponent({
         const resultImages = ref([]);
 
         /**
-         * Returns the images to use in the slides
+         * Sets the resultsImages ref to the array of images to show in the slides
          */
         const getImages = () => {
-            // To destructure props and don't lose reactivity we need to convert them into ref
             const { canvasResults, possibleDuplicatedImages } = props;
 
             const interval = setInterval(() => {
