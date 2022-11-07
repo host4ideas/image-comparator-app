@@ -1,5 +1,5 @@
 <template>
-    <swiper
+    <!-- <swiper
         class="mySwiper swiper-h"
         :spaceBetween="5"
         :pagination="{
@@ -10,10 +10,11 @@
         <swiper-slide v-for="(images, index) in resultImages" :key="index">
             <Slide :takenImage="takenImage" :slideResults="images" />
         </swiper-slide>
-    </swiper>
+    </swiper> -->
+    <SliderTest />
 </template>
 <style scoped>
-img {
+/* img {
     width: 300px;
     height: 300px;
 }
@@ -26,14 +27,14 @@ canvas {
 .swiper {
     width: 100%;
     height: 100%;
-}
+} */
 
-.swiper-slide {
+/* .swiper-slide {
     text-align: center;
     font-size: 18px;
     background: rgb(126, 125, 125);
 
-    /* Center slide text vertically */
+     Center slide text vertically 
     display: -webkit-box;
     display: -ms-flexbox;
     display: -webkit-flex;
@@ -46,9 +47,9 @@ canvas {
     -ms-flex-align: center;
     -webkit-align-items: center;
     align-items: center;
-}
+} */
 
-.swiper-slide img {
+/* .swiper-slide img {
     display: block;
     width: 100%;
     height: 100%;
@@ -57,18 +58,20 @@ canvas {
 
 .swiper-v {
     background: rgb(255, 255, 255);
-}
+} */
 </style>
 <script>
 // Vue
 import { defineComponent, toRaw, ref } from "vue";
 // Swiper
 import { Autoplay, Keyboard, Pagination, Zoom, Navigation } from "swiper";
-import { Swiper, SwiperSlide } from "swiper/vue/swiper-vue";
-import "swiper/swiper-bundle.css";
-import "@ionic/vue/css/ionic-swiper.css";
-// Custom components
-import Slide from "@/components/Slide.vue";
+// import { Swiper, SwiperSlide } from "swiper/vue/swiper-vue";
+// import "swiper/swiper-bundle.css";
+// import "@ionic/vue/css/ionic-swiper.css";
+// // Custom components
+// import Slide from "@/components/Slide.vue";
+
+import SliderTest from "@/components/SliderTest.vue";
 
 export default defineComponent({
     props: {
@@ -76,7 +79,12 @@ export default defineComponent({
         canvasResults: Array,
         possibleDuplicatedImages: Array,
     },
-    components: { Swiper, SwiperSlide, Slide },
+    components: {
+        //  Swiper,
+        //  SwiperSlide,
+        //  Slide,
+        SliderTest,
+    },
     setup(props) {
         const resultImages = ref([]);
 

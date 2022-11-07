@@ -236,7 +236,7 @@ export default {
                         text: "YES",
                         handler: async () => {
                             this.imageComparisonMode = false;
-                            this.$router.go(0);
+                            this.$router.push("/tabs/tab3");
                         },
                     },
                 ],
