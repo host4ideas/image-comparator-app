@@ -3,7 +3,7 @@
         <ion-toolbar :color="copyFile ? 'secondary' : 'primary'">
             <ion-button
                 slot="start"
-                v-if="currentFolder != '' && currentFolder !== ROOT_FOLDER"
+                v-if="currentFolder != ''"
                 @click="handleBackButton()"
             >
                 <ion-icon :icon="arrowBackCircleOutline" />
@@ -182,6 +182,10 @@ export default {
         };
     },
     methods: {
+        handleScroll(e) {
+            e.preventDefault();
+            this.$refs.scroll.scrollTop += e.deltaY;
+        },
         handleBackButton() {
             /*
                 Due to history navigation between tabs is problematic.
@@ -201,6 +205,10 @@ export default {
                 this.$router.replace(newPath);
             }
             newPath = null;
+        },
+        getCurrentFolder() {
+            const folder = this.currentFolder.split("/");
+            return folder[folder.length - 1];
         },
         addToCompare(item) {
             const itemPath = item.uri;
