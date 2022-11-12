@@ -339,10 +339,10 @@ export default {
             await alert.present();
         },
         addFiles() {
-            this.$refs.filepicker.click();
+            this.filepicker.click();
         },
         addFolder() {
-            this.$refs.folderpicker.click();
+            this.folderpicker.click();
         },
         /**
          * Convert File to base64 string
@@ -391,10 +391,7 @@ export default {
                     }
                 }
             }
-            // Empty input value
-            this.$refs.filepicker.value = "";
-            this.$refs.folderpicker.value = "";
-            // Reload documents
+
             this.loadDocuments();
         },
         /**
@@ -433,10 +430,6 @@ export default {
                     console.log(error.message + " For: " + file.name);
                 }
             }
-            // Empty input value
-            this.$refs.filepicker.value = "";
-            this.$refs.folderpicker.value = "";
-            // Reload documents
             this.loadDocuments();
         },
         async openFile(entry) {
@@ -579,6 +572,8 @@ export default {
         },
     },
     mounted() {
+        this.filepicker = this.$refs.filepicker;
+        this.folderpicker = this.$refs.folderpicker;
         this.checkRootFolder().then(() => {
             this.loadDocuments();
         });
