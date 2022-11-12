@@ -11,6 +11,7 @@ export function usePhotoGallery() {
     const APP_DIRECTORY = Directory.Documents;
     const ROOT_FOLDER = "my-photo-collections";
     let openCV = null;
+    let collectionFolder = null;
 
     const loading = loadingController.create({});
 
@@ -25,19 +26,17 @@ export function usePhotoGallery() {
         // }
     };
 
-    const controlLoadingScreen = (option, message) => {
-        loading.then((loadingScreen) => {
-            loadingScreen.message = message;
-            if (option === "start") {
-                loadingScreen.present().then(() => {
-                    return true;
-                });
-            } else {
-                loadingScreen.dismiss().then(() => {
-                    return false;
-                });
-            }
-        });
+    const controlLoadingScreen = async (option, message) => {
+        const loadingScreen = await loading;
+        loadingScreen.message = message;
+
+        if (option === "start") {
+            await loadingScreen.present();
+            return true;
+        } else {
+            await loadingScreen.dismiss();
+            return false;
+        }
     };
 
     const convertBlobToBase64 = (blob) =>
@@ -71,6 +70,7 @@ export function usePhotoGallery() {
                     alert.present();
                 });
         } else {
+            collectionFolder = settings.myCollectionFolder;
             loadSaved(settings.myCollectionFolder);
         }
     };
@@ -158,41 +158,48 @@ export function usePhotoGallery() {
     };
 
     const takePhoto = async () => {
-        try {
-            const photo = await Camera.getPhoto({
-                resultType: CameraResultType.Uri,
-                source: CameraSource.Camera,
-                quality: 100,
-            });
+        controlLoadingScreen("start", "Loading camera");
 
-            let base64Data;
+        const permissions = await Camera.checkPermissions();
 
-            if (isPlatform("hybrid")) {
-                const file = await Filesystem.readFile({
-                    // eslint-disable-next-line
-                    path: photo.path,
+        if (
+            permissions.camera === "granted" &&
+            permissions.photos === "granted"
+        ) {
+            try {
+                controlLoadingScreen("stop", "Loading camera");
+
+                const photo = await Camera.getPhoto({
+                    resultType: CameraResultType.Uri,
+                    source: CameraSource.Camera,
+                    quality: 100,
                 });
-                base64Data = file.data;
-            } else {
-                // Fetch the photo, read as a blob, then convert to base64 format
-                // eslint-disable-next-line
-                const response = await fetch(photo.webPath);
-                const blob = await response.blob();
-                base64Data = await convertBlobToBase64(blob);
+
+                let base64Data;
+
+                if (isPlatform("hybrid")) {
+                    const file = await Filesystem.readFile({
+                        // eslint-disable-next-line
+                        path: photo.path,
+                    });
+                    base64Data = file.data;
+                } else {
+                    // Fetch the photo, read as a blob, then convert to base64 format
+                    // eslint-disable-next-line
+                    const response = await fetch(photo.webPath);
+                    const blob = await response.blob();
+                    base64Data = await convertBlobToBase64(blob);
+                }
+                return base64Data;
+            } catch (e) {
+                console.info(e.message);
+                return null;
+            } finally {
+                controlLoadingScreen("stop", "Loading camera");
             }
-
-            const img = document.createElement("img");
-            document.body.appendChild(img);
-            img.src = base64Data;
-            img.id = "img1";
-
-            // Delete data to save memory
-            base64Data = null;
-            return img;
-        } catch (e) {
-            console.info(e.message);
-            return null;
         }
+
+        Camera.requestPermissions();
     };
 
     const deletePhoto = async (photo) => {
@@ -205,8 +212,9 @@ export function usePhotoGallery() {
         const filename = photo.filepath.substr(
             photo.filepath.lastIndexOf("/") + 1
         );
+
         await Filesystem.deleteFile({
-            path: filename,
+            path: collectionFolder + "/" + filename,
             directory: APP_DIRECTORY,
         });
     };
