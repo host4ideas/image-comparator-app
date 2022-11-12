@@ -1,56 +1,40 @@
 <template>
     <!-- <swiper
         class="mySwiper swiper-h"
-        :spaceBetween="50"
+        :spaceBetween="5"
         :pagination="{
             clickable: true,
         }"
         :modules="modules"
     >
-        <swiper-slide v-for="(results, index) in resultImages" :key="index">
-            <swiper
-                class="mySwiper2 swiper-v"
-                :direction="'vertical'"
-                :spaceBetween="50"
-                :pagination="{
-                    clickable: true,
-                }"
-                :modules="modules"
-            >
-                <swiper-slide
-                    ><img
-                        src="https://concepto.de/wp-content/uploads/2015/03/paisaje-800x409.jpg"
-                        alt=""
-                /></swiper-slide>
-                <swiper-slide v-html="results.image"></swiper-slide>
-                <swiper-slide>
-                    {{ takenImage }}
-                </swiper-slide>
-                <swiper-slide v-if="showOpencvResult">
-                    <img
-                        :src="convertBlobToBase64(results.opencvResult)"
-                        alt="OpenCV result"
-                    />
-                </swiper-slide>
-            </swiper>
+        <swiper-slide v-for="(images, index) in resultImages" :key="index">
+            <Slide :takenImage="takenImage" :slideResults="images" />
         </swiper-slide>
     </swiper> -->
-    {{ takenImage }}
-    {{ resultImages[0]?.image }}
-    {{ resultImages[0]?.opencvResult }}
+    <SliderTest />
 </template>
-<style>
+<style scoped>
+/* img {
+    width: 300px;
+    height: 300px;
+}
+
+canvas {
+    width: 300px;
+    height: 300px;
+}
+
 .swiper {
     width: 100%;
     height: 100%;
-}
+} */
 
-.swiper-slide {
+/* .swiper-slide {
     text-align: center;
     font-size: 18px;
-    background: #fff;
+    background: rgb(126, 125, 125);
 
-    /* Center slide text vertically */
+     Center slide text vertically 
     display: -webkit-box;
     display: -ms-flexbox;
     display: -webkit-flex;
@@ -63,9 +47,9 @@
     -ms-flex-align: center;
     -webkit-align-items: center;
     align-items: center;
-}
+} */
 
-.swiper-slide img {
+/* .swiper-slide img {
     display: block;
     width: 100%;
     height: 100%;
@@ -73,20 +57,21 @@
 }
 
 .swiper-v {
-    background: #eee;
-}
+    background: rgb(255, 255, 255);
+} */
 </style>
 <script>
 // Vue
 import { defineComponent, toRaw, ref } from "vue";
 // Swiper
-import { Keyboard, Pagination, Zoom, Navigation } from "swiper";
-import { Swiper, SwiperSlide } from "swiper/vue/swiper-vue";
-import "swiper/swiper-bundle.css";
-import "@ionic/vue/css/ionic-swiper.css";
-// Capacitor
-import { Preferences } from "@capacitor/preferences";
-import { Filesystem, Directory } from "@capacitor/filesystem";
+import { Autoplay, Keyboard, Pagination, Zoom, Navigation } from "swiper";
+// import { Swiper, SwiperSlide } from "swiper/vue/swiper-vue";
+// import "swiper/swiper-bundle.css";
+// import "@ionic/vue/css/ionic-swiper.css";
+// // Custom components
+// import Slide from "@/components/Slide.vue";
+
+import SliderTest from "@/components/SliderTest.vue";
 
 export default defineComponent({
     props: {
@@ -95,114 +80,50 @@ export default defineComponent({
         possibleDuplicatedImages: Array,
     },
     components: {
-        // Swiper,
-        // SwiperSlide,
+        //  Swiper,
+        //  SwiperSlide,
+        //  Slide,
+        SliderTest,
     },
     setup(props) {
-        const USER_PREFERENCES = "settings";
-        const APP_DIRECTORY = Directory.Documents;
-        const showOpencvResult = ref(false);
         const resultImages = ref([]);
-
-        const getProxyValue = () => {
-            const { canvasResults, possibleDuplicatedImages } = props;
-
-            let count = 0;
-
-            return new Promise((res, rej) => {
-                const interval = setInterval(() => {
-                    count += 1;
-                    if (
-                        toRaw(canvasResults).length > 0 &&
-                        toRaw(possibleDuplicatedImages).length > 0
-                    ) {
-                        clearInterval(interval);
-                        res({ canvasResults, possibleDuplicatedImages });
-                    } else if (count > 10) {
-                        // Lapsed more than 500ms
-                        rej("Empty results");
-                    }
-                }, 50);
-            });
-        };
 
         /**
          * Sets the resultsImages ref to the array of images to show in the slides
          */
-        const getImages = async () => {
-            /**
-             * @type {Array<{ image: HTMLCanvasElement[], opencvResult: File[] }>}
-             */
-            const resultImages = [];
+        const getImages = () => {
+            const { canvasResults, possibleDuplicatedImages } = props;
 
-            try {
-                const { canvasResults, possibleDuplicatedImages } =
-                    await getProxyValue();
+            const interval = setInterval(() => {
+                if (
+                    toRaw(canvasResults).length > 0 &&
+                    toRaw(possibleDuplicatedImages).length > 0
+                ) {
+                    clearInterval(interval);
+                    const duplicatedImages = toRaw(canvasResults);
+                    const openCVImages = toRaw(possibleDuplicatedImages);
 
-                // In order to pass to a slide the images as: Array<Object> where [{imageFile, canvas}]
-                for (let i = 0; i <= canvasResults.length; i++) {
-                    resultImages.push({
-                        image: canvasResults[i],
-                        opencvResult: possibleDuplicatedImages[i],
-                    });
+                    // In order to pass to a slide the images as: Array<Object> where [{imageFile, canvas}]
+                    /**
+                     * @type {Array<{ image: HTMLCanvasElement[], opencvResult: File[] }>}
+                     */
+                    const images = [];
+                    for (let i = 0; i <= duplicatedImages.length; i++) {
+                        images.push({
+                            image: duplicatedImages[i],
+                            opencvResult: openCVImages[i],
+                        });
+                    }
+                    resultImages.value = images;
                 }
-            } catch (error) {
-                console.log("No images to compare");
-                return;
-            }
-
-            console.log(resultImages);
-
-            return resultImages;
+            }, 50);
         };
 
-        /**
-         * Convert File to base64 string
-         */
-        const convertBlobToBase64 = (blob) => {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onerror = reject;
-                reader.onload = () => {
-                    resolve(reader.result);
-                };
-                reader.readAsDataURL(blob);
-            });
-        };
-
-        const getImageFromStorage = async (entry) => {
-            console.log(entry);
-
-            const file = await Filesystem.readFile({
-                directory: APP_DIRECTORY,
-                path: entry.uri,
-            });
-            return file.data;
-        };
-
-        getImages().then((results) => {
-            // If the user has setup that wants to visualize OpenCV result, show it
-            Preferences.get({
-                key: USER_PREFERENCES,
-            }).then((settingsList) => {
-                const settingsParsed = JSON.parse(settingsList.value);
-
-                if (settingsParsed.showCanvasResult) {
-                    showOpencvResult.value = true;
-                }
-            });
-
-            resultImages.value = results;
-
-            console.log(results);
-        });
+        getImages();
 
         return {
-            modules: [Pagination, Zoom, Navigation, Keyboard],
+            modules: [Autoplay, Keyboard, Pagination, Zoom, Navigation],
             resultImages,
-            showOpencvResult,
-            convertBlobToBase64,
-            getImageFromStorage,
         };
     },
 });
