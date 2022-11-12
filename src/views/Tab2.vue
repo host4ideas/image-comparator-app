@@ -6,11 +6,14 @@
             </ion-toolbar>
         </ion-header>
 
-        <ion-content v-if="showSlides" :fullscreen="true">
+        <ion-content
+            v-if="data.showSlides && data.canvasResults"
+            :fullscreen="true"
+        >
             <ImageCompareSlides
-                :takenImage="imgToCompare"
-                :canvasResults="canvasResults"
-                :possibleDuplicatedImages="possibleDuplicatedImages"
+                :takenImage="data.imgToCompare"
+                :canvasResults="data.canvasResults"
+                :possibleDuplicatedImages="data.possibleDuplicatedImages"
             />
         </ion-content>
 
@@ -46,7 +49,7 @@
     </ion-page>
 </template>
 
-<script>
+<script setup>
 import { camera, trash, close } from "ionicons/icons";
 import {
     actionSheetController,
@@ -64,99 +67,69 @@ import {
     IonCol,
 } from "@ionic/vue";
 import { usePhotoGallery } from "@/composables/usePhotoGallery";
-import { defineComponent, watchEffect, ref } from "vue";
+import { defineProps, reactive, watchEffect } from "vue";
+import { useRouter } from "vue-router";
 import ImageCompareSlides from "@/components/ImageCompareSlides.vue";
-import router from "@/router/index";
 
-export default defineComponent({
-    name: "Tab2",
-    props: ["foldersToCompare"],
-    components: {
-        IonHeader,
-        IonFab,
-        IonIcon,
-        IonFabButton,
-        IonToolbar,
-        IonTitle,
-        IonContent,
-        IonPage,
-        IonGrid,
-        IonRow,
-        IonCol,
-        IonImg,
-        ImageCompareSlides,
-    },
-    setup(props) {
-        const { photos, takePhoto, deletePhoto, compareImages } =
-            usePhotoGallery();
-        const canvasResults = ref();
-        const possibleDuplicatedImages = ref();
-        const showSlides = ref(false);
-        const imgToCompare = ref();
+const router = useRouter();
 
-        async function showActionSheet(photo) {
-            const actionSheet = await actionSheetController.create({
-                header: "Photos",
-                buttons: [
-                    {
-                        text: "Delete",
-                        role: "destructive",
-                        icon: trash,
-                        handler: () => {
-                            deletePhoto(photo);
-                        },
-                    },
-                    {
-                        text: "Cancel",
-                        icon: close,
-                        role: "cancel",
-                        handler: () => {
-                            // Nothing to do, action sheet is automatically closed
-                        },
-                    },
-                ],
-            });
-            await actionSheet.present();
-        }
+const props = defineProps(["foldersToCompare"]);
 
-        const handlePhoto = async () => {
-            imgToCompare.value = await takePhoto();
-            if (imgToCompare.value) {
-                await router.push("/tabs/tab3?imageComparison=true");
-            }
-        };
+const { photos, takePhoto, deletePhoto, compareImages } = usePhotoGallery();
 
-        watchEffect(() => {
-            if (props.foldersToCompare && imgToCompare.value) {
-                const folders = JSON.parse(props.foldersToCompare);
-                compareImages(imgToCompare.value, folders).then((results) => {
-                    // Show slides
-                    canvasResults.value = results.canvasResults;
-                    possibleDuplicatedImages.value =
-                        results.possibleDuplicatedImages;
-                    showSlides.value = true;
+const data = reactive({
+    canvasResults: null,
+    possibleDuplicatedImages: null,
+    showSlides: false,
+    imgToCompare: null,
+});
 
-                    // Hide the tabs buttons and camera shutter button
-                    document.getElementById("tabControl").style.display =
-                        "none";
-                    document.getElementById("cameraBtn").style.display = "none";
-                });
-                router.replace("/tabs/tab2");
-            }
+async function showActionSheet(photo) {
+    const actionSheet = await actionSheetController.create({
+        header: "Photos",
+        buttons: [
+            {
+                text: "Delete",
+                role: "destructive",
+                icon: trash,
+                handler: () => {
+                    deletePhoto(photo);
+                },
+            },
+            {
+                text: "Cancel",
+                icon: close,
+                role: "cancel",
+                handler: () => {
+                    // Nothing to do, action sheet is automatically closed
+                },
+            },
+        ],
+    });
+    await actionSheet.present();
+}
+
+const handlePhoto = async () => {
+    data.imgToCompare = await takePhoto();
+    if (data.imgToCompare) {
+        await router.push("/tabs/tab3?imageComparison=true");
+    }
+};
+
+watchEffect(() => {
+    if (props.foldersToCompare && data.imgToCompare) {
+        const folders = JSON.parse(props.foldersToCompare);
+        compareImages(data.imgToCompare, folders).then((results) => {
+            // Show slides
+            data.canvasResults = results.canvasResults;
+            data.possibleDuplicatedImages = results.possibleDuplicatedImages;
+            data.showSlides = true;
+
+            // Hide the tabs buttons and camera shutter button
+            document.getElementById("tabControl").style.display = "none";
+            document.getElementById("cameraBtn").style.display = "none";
         });
-
-        return {
-            showActionSheet,
-            handlePhoto,
-            imgToCompare,
-            photos,
-            camera,
-            trash,
-            close,
-            showSlides,
-            canvasResults,
-            possibleDuplicatedImages,
-        };
-    },
+        router.replace("/tabs/tab2");
+    }
 });
 </script>
