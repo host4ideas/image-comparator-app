@@ -401,45 +401,33 @@ export default {
         async folderSelected($event) {
             // Array of all the elements in the folder but not the included folders
             const files = $event.target.files; // FileList
-            /*
-                Web
-            */
             // Loop all files
             for (const file of files) {
                 try {
-                    // First of all check if the file can be processed
+                    // First check if the file can be processed
                     const base64Data = await this.convertBlobToBase64(file);
 
-                    // Relative paths per file, we'll use this to know what a file's path is
+                    // Relative paths per file, we'll use this to know what a file's path
                     const relativePaths = file.webkitRelativePath.split("/");
-                    // Loop paths from each file
-                    for (let i = 0; i < relativePaths.length; i++) {
-                        // Create the parent folder if another parent folder exists
-                        if (relativePaths[i + 1]) {
-                            // Push into newPath all the relativePaths until the current one
-                            let newPath = relativePaths.filter(
-                                (path, index) => {
-                                    return index <= i;
-                                }
-                            );
-                            // Make a string from the array of paths
-                            newPath = newPath.join("/");
-                            await this.mkdirHelper(
-                                `${this.currentFolder}/${newPath}`
-                            );
-                        } else {
-                            // Write the file to the last file's parent folder founded
-                            const newPath = relativePaths.join("/");
+                    // Remove the last element (which should be the file's name)
+                    relativePaths.pop();
 
-                            await Filesystem.writeFile({
-                                path: newPath,
-                                data: base64Data,
-                                directory: this.APP_DIRECTORY,
-                            });
-                        }
+                    const newPath =
+                        this.currentFolder + "/" + relativePaths.join("/");
+
+                    // Try to create the folder
+                    await this.mkdirHelper(newPath);
+
+                    if (base64Data) {
+                        // Write file
+                        await Filesystem.writeFile({
+                            path: newPath + "/" + file.name,
+                            data: base64Data,
+                            directory: this.APP_DIRECTORY,
+                        });
                     }
                 } catch (error) {
-                    console.log(error.message + " for: " + file.name);
+                    console.log(error.message + " For: " + file.name);
                 }
             }
             this.loadDocuments();
